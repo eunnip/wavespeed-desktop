@@ -118,6 +118,20 @@ export function PlaygroundPage() {
     ? historyItem.outputs
     : (activeTab?.outputs ?? []);
 
+  const historyLen = activeTab?.generationHistory.length ?? 0;
+  const navigateHistory = useCallback(
+    (direction: "prev" | "next") => {
+      if (historyLen === 0) return;
+      const cur = historyIndex ?? 0;
+      if (direction === "prev") {
+        selectHistoryItem(cur === 0 ? historyLen - 1 : cur - 1);
+      } else {
+        selectHistoryItem(cur === historyLen - 1 ? 0 : cur + 1);
+      }
+    },
+    [historyLen, historyIndex, selectHistoryItem],
+  );
+
   const templateLoadedRef = useRef<string | null>(null);
   const initialTabCreatedRef = useRef(false);
 
@@ -940,6 +954,8 @@ export function PlaygroundPage() {
                       onClearBatch={clearBatchResults}
                       batchPreviewInputs={batchPreviewInputs}
                       historyIndex={historyIndex}
+                      historyLength={historyLen}
+                      onNavigateHistory={navigateHistory}
                     />
                     <HistoryDrawer
                       history={activeTab.generationHistory}

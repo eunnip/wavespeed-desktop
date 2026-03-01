@@ -107,6 +107,10 @@ interface OutputDisplayProps {
   modelId?: string;
   hideGameButton?: boolean;
   gridLayout?: boolean;
+  /** Total number of history items (for fullscreen prev/next across generations) */
+  historyLength?: number;
+  /** Navigate to prev/next history generation from fullscreen */
+  onNavigateHistory?: (direction: "prev" | "next") => void;
 }
 
 export function OutputDisplay({
@@ -117,6 +121,8 @@ export function OutputDisplay({
   modelId,
   hideGameButton,
   gridLayout,
+  historyLength,
+  onNavigateHistory,
 }: OutputDisplayProps) {
   const { t } = useTranslation();
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -153,26 +159,38 @@ export function OutputDisplay({
       ? (mediaOutputs.find((m) => m.index === fullscreenIndex) ?? null)
       : null;
 
+  // Whether fullscreen should show history-level navigation (single output per generation)
+  const showHistoryNav =
+    mediaOutputs.length <= 1 && (historyLength ?? 0) > 1 && !!onNavigateHistory;
+
   // Keyboard navigation for fullscreen preview
   useEffect(() => {
     if (fullscreenIndex === null) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
         e.preventDefault();
-        const curPos = mediaOutputs.findIndex(
-          (m) => m.index === fullscreenIndex,
-        );
-        if (curPos === -1 || mediaOutputs.length <= 1) return;
-        const newPos = curPos === 0 ? mediaOutputs.length - 1 : curPos - 1;
-        setFullscreenIndex(mediaOutputs[newPos].index);
+        if (mediaOutputs.length > 1) {
+          const curPos = mediaOutputs.findIndex(
+            (m) => m.index === fullscreenIndex,
+          );
+          if (curPos === -1) return;
+          const newPos = curPos === 0 ? mediaOutputs.length - 1 : curPos - 1;
+          setFullscreenIndex(mediaOutputs[newPos].index);
+        } else if (showHistoryNav) {
+          onNavigateHistory!("prev");
+        }
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        const curPos = mediaOutputs.findIndex(
-          (m) => m.index === fullscreenIndex,
-        );
-        if (curPos === -1 || mediaOutputs.length <= 1) return;
-        const newPos = curPos === mediaOutputs.length - 1 ? 0 : curPos + 1;
-        setFullscreenIndex(mediaOutputs[newPos].index);
+        if (mediaOutputs.length > 1) {
+          const curPos = mediaOutputs.findIndex(
+            (m) => m.index === fullscreenIndex,
+          );
+          if (curPos === -1) return;
+          const newPos = curPos === mediaOutputs.length - 1 ? 0 : curPos + 1;
+          setFullscreenIndex(mediaOutputs[newPos].index);
+        } else if (showHistoryNav) {
+          onNavigateHistory!("next");
+        }
       }
     };
     window.addEventListener("keydown", handler);
@@ -756,7 +774,7 @@ export function OutputDisplay({
           >
             <X className="h-6 w-6" />
           </Button>
-          {/* Navigation arrows */}
+          {/* Navigation arrows — multi-output within generation */}
           {mediaOutputs.length > 1 && (
             <>
               <Button
@@ -788,6 +806,27 @@ export function OutputDisplay({
                     curPos === mediaOutputs.length - 1 ? 0 : curPos + 1;
                   setFullscreenIndex(mediaOutputs[newPos].index);
                 }}
+              >
+                <span className="text-xl">▶</span>
+              </Button>
+            </>
+          )}
+          {/* Navigation arrows — single output, browse across history generations */}
+          {showHistoryNav && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 h-10 w-10 [filter:drop-shadow(0_0_2px_rgba(0,0,0,0.8))_drop-shadow(0_0_4px_rgba(0,0,0,0.5))]"
+                onClick={() => onNavigateHistory!("prev")}
+              >
+                <span className="text-xl">◀</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 h-10 w-10 [filter:drop-shadow(0_0_2px_rgba(0,0,0,0.8))_drop-shadow(0_0_4px_rgba(0,0,0,0.5))]"
+                onClick={() => onNavigateHistory!("next")}
               >
                 <span className="text-xl">▶</span>
               </Button>

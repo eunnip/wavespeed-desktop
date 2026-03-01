@@ -19,6 +19,8 @@ interface ResultPanelProps {
   batchPreviewInputs: Record<string, unknown>[];
   // History
   historyIndex: number | null;
+  historyLength?: number;
+  onNavigateHistory?: (direction: "prev" | "next") => void;
 }
 
 export function ResultPanel({
@@ -34,6 +36,8 @@ export function ResultPanel({
   onClearBatch,
   batchPreviewInputs,
   historyIndex,
+  historyLength,
+  onNavigateHistory,
 }: ResultPanelProps) {
   // Only show batch grid when there are actual results
   const showBatchGrid = batchResults.length > 0 && historyIndex === null;
@@ -56,6 +60,8 @@ export function ResultPanel({
           error={error}
           isLoading={isLoading}
           modelId={modelId}
+          historyLength={historyLength}
+          onNavigateHistory={onNavigateHistory}
         />
       )}
     </div>
