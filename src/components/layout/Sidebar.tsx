@@ -21,6 +21,7 @@ import {
   FolderHeart,
   Sparkles,
   GitBranch,
+  Layers,
   X,
 } from "lucide-react";
 
@@ -67,6 +68,11 @@ export function Sidebar({
       titleKey: "nav.home",
       href: "/",
       icon: Home,
+    },
+    {
+      titleKey: "nav.models",
+      href: "/models",
+      icon: Layers,
     },
     {
       titleKey: "nav.playground",

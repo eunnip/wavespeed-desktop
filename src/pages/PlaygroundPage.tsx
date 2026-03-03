@@ -21,7 +21,6 @@ import { DynamicForm } from "@/components/playground/DynamicForm";
 import { ModelSelector } from "@/components/playground/ModelSelector";
 import { BatchControls } from "@/components/playground/BatchControls";
 import { HistoryDrawer } from "@/components/playground/HistoryDrawer";
-import { ExplorePanel } from "@/components/playground/ExplorePanel";
 import { ResultPanel } from "@/components/playground/ResultPanel";
 import { TemplatesPanel } from "@/components/playground/TemplatesPanel";
 import { FeaturedModelsPanel } from "@/components/playground/FeaturedModelsPanel";
@@ -47,7 +46,7 @@ import {
   type TemplateFormData,
 } from "@/components/templates/TemplateDialog";
 
-type RightPanelTab = "result" | "models" | "featured" | "templates";
+type RightPanelTab = "result" | "featured" | "templates";
 
 /** Format raw model name/id for display. e.g. "google/nano-banana-pro/text-to-image" → "Google / Nano Banana Pro" */
 function formatModelDisplay(name: string): string {
@@ -141,16 +140,16 @@ export function PlaygroundPage() {
 
   // Right panel tab state
   const isMobile = isCapacitorNative();
-  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>("models");
+  const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>("featured");
   const [, startTransition] = useTransition();
   const switchTab = useCallback((tab: RightPanelTab) => {
     startTransition(() => setRightPanelTab(tab));
   }, []);
 
-  // When all tabs are closed and we're on the Result tab, switch to Featured/Models
+  // When all tabs are closed and we're on the Result tab, switch to Featured
   useEffect(() => {
     if (!activeTab && rightPanelTab === "result") {
-      setRightPanelTab("models");
+      setRightPanelTab("featured");
     }
   }, [activeTab, rightPanelTab, isMobile]);
 
@@ -453,23 +452,6 @@ export function PlaygroundPage() {
     }
   };
 
-  // Explore: select a model from the all-models list → load in current tab (or create new tab if none)
-  const handleExploreSelectModel = useCallback(
-    (modelId: string) => {
-      const model = models.find((m) => m.model_id === modelId);
-      if (model) {
-        if (activeTab) {
-          setSelectedModel(model);
-        } else {
-          createTab(model);
-        }
-        navigate(`/playground/${modelId}`, { replace: true });
-        setRightPanelTab("result");
-      }
-    },
-    [models, activeTab, setSelectedModel, createTab, navigate],
-  );
-
   // Explore: select a featured model → open in new tab
   const handleExploreSelectFeatured = useCallback(
     (primaryVariant: string) => {
@@ -669,7 +651,7 @@ export function PlaygroundPage() {
                       )}
                     </button>
                     <button
-                      onClick={() => switchTab("models")}
+                      onClick={() => navigate("/models")}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                     >
                       <Layers className="h-3.5 w-3.5" />
@@ -869,7 +851,7 @@ export function PlaygroundPage() {
                 </button>
               </div>
 
-              {/* Right group: Featured Models / Models / Templates */}
+              {/* Right group: Featured Models / Templates */}
               <div className="flex items-center gap-4">
                 {(
                   [
@@ -885,11 +867,6 @@ export function PlaygroundPage() {
                           },
                         ]
                       : []),
-                    {
-                      key: "models" as const,
-                      icon: <Layers className="h-4 w-4" />,
-                      label: t("playground.rightPanel.models", "All Models"),
-                    },
                     {
                       key: "templates" as const,
                       icon: <FolderOpen className="h-4 w-4" />,
@@ -922,14 +899,6 @@ export function PlaygroundPage() {
 
             {/* Right Panel Content */}
             <div className="flex-1 overflow-hidden flex flex-col">
-              <div
-                className={cn(
-                  "flex-1 overflow-hidden flex flex-col",
-                  rightPanelTab !== "models" && "hidden",
-                )}
-              >
-                <ExplorePanel onSelectModel={handleExploreSelectModel} />
-              </div>
               {!isMobile && (
                 <div
                   className={cn(
@@ -1001,7 +970,7 @@ export function PlaygroundPage() {
                         )}
                       </button>
                       <button
-                        onClick={() => switchTab("models")}
+                        onClick={() => navigate("/models")}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                       >
                         <Layers className="h-3.5 w-3.5" />
