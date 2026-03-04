@@ -1,137 +1,164 @@
-import { create } from 'zustand'
-import { apiClient } from '@/api/client'
-import type { Model } from '@/types/model'
-import { fuzzySearch } from '@/lib/fuzzySearch'
+import { create } from "zustand";
+import { apiClient } from "@/api/client";
+import type { Model } from "@/types/model";
+import { fuzzySearch } from "@/lib/fuzzySearch";
 
-export type SortBy = 'name' | 'price' | 'type' | 'sort_order'
-export type SortOrder = 'asc' | 'desc'
+export type SortBy = "name" | "price" | "type" | "sort_order";
+export type SortOrder = "asc" | "desc";
 
-const FAVORITES_STORAGE_KEY = 'wavespeed_favorites'
+const FAVORITES_STORAGE_KEY = "wavespeed_favorites";
+const MODELS_CACHE_KEY = "wavespeed_models_cache_v1";
 
 function loadFavorites(): Set<string> {
   try {
-    const stored = localStorage.getItem(FAVORITES_STORAGE_KEY)
-    if (stored) {
-      return new Set(JSON.parse(stored))
-    }
+    const stored = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    if (stored) return new Set(JSON.parse(stored));
   } catch (e) {
-    console.error('Failed to load favorites:', e)
+    console.error("Failed to load favorites:", e);
   }
-  return new Set()
+  return new Set();
 }
 
 function saveFavorites(favorites: Set<string>) {
   try {
-    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favorites]))
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify([...favorites]));
   } catch (e) {
-    console.error('Failed to save favorites:', e)
+    console.error("Failed to save favorites:", e);
   }
 }
 
+/** Load cached models synchronously from localStorage for instant first render */
+function loadCachedModels(): Model[] {
+  try {
+    const raw = localStorage.getItem(MODELS_CACHE_KEY);
+    if (raw) return JSON.parse(raw) as Model[];
+  } catch {}
+  return [];
+}
+
+function saveCachedModels(models: Model[]) {
+  try {
+    localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify(models));
+  } catch {}
+}
+
 interface ModelsState {
-  models: Model[]
-  isLoading: boolean
-  error: string | null
-  searchQuery: string
-  selectedType: string | null
-  sortBy: SortBy
-  sortOrder: SortOrder
-  favorites: Set<string>
-  showFavoritesOnly: boolean
-  hasFetched: boolean
-  fetchModels: (force?: boolean) => Promise<void>
-  setSearchQuery: (query: string) => void
-  setSelectedType: (type: string | null) => void
-  setSortBy: (sortBy: SortBy) => void
-  setSortOrder: (sortOrder: SortOrder) => void
-  toggleSortOrder: () => void
-  toggleFavorite: (modelId: string) => void
-  isFavorite: (modelId: string) => boolean
-  setShowFavoritesOnly: (show: boolean) => void
-  getFilteredModels: () => Model[]
-  getModelById: (modelId: string) => Model | undefined
+  models: Model[];
+  isLoading: boolean;
+  error: string | null;
+  searchQuery: string;
+  selectedType: string | null;
+  sortBy: SortBy;
+  sortOrder: SortOrder;
+  favorites: Set<string>;
+  showFavoritesOnly: boolean;
+  hasFetched: boolean;
+  fetchModels: (force?: boolean) => Promise<void>;
+  setSearchQuery: (query: string) => void;
+  setSelectedType: (type: string | null) => void;
+  setSortBy: (sortBy: SortBy) => void;
+  setSortOrder: (sortOrder: SortOrder) => void;
+  toggleSortOrder: () => void;
+  toggleFavorite: (modelId: string) => void;
+  isFavorite: (modelId: string) => boolean;
+  setShowFavoritesOnly: (show: boolean) => void;
+  getFilteredModels: () => Model[];
+  getModelById: (modelId: string) => Model | undefined;
 }
 
 export const useModelsStore = create<ModelsState>((set, get) => ({
-  models: [],
+  models: loadCachedModels(), // instant: pre-populate from localStorage cache
   isLoading: false,
   error: null,
-  searchQuery: '',
+  searchQuery: "",
   selectedType: null,
-  sortBy: 'sort_order',
-  sortOrder: 'desc',
+  sortBy: "sort_order",
+  sortOrder: "desc",
   favorites: loadFavorites(),
   showFavoritesOnly: false,
   hasFetched: false,
 
   fetchModels: async (force = false) => {
-    // Skip if already fetched (unless forced)
-    if (get().hasFetched && !force) {
-      return
-    }
-    set({ isLoading: true, error: null })
+    if (get().hasFetched && !force) return;
+    set({ isLoading: true, error: null });
     try {
-      const models = await apiClient.listModels()
-      set({ models, isLoading: false, hasFetched: true })
+      const raw = await apiClient.listModels();
+      const seen = new Set<string>();
+      const models = raw.filter((m) => {
+        if (seen.has(m.model_id)) return false;
+        seen.add(m.model_id);
+        return true;
+      });
+      saveCachedModels(models); // persist for next cold start
+      set({ models, isLoading: false, hasFetched: true });
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Failed to fetch models',
-        isLoading: false
-      })
+        error:
+          error instanceof Error ? error.message : "Failed to fetch models",
+        isLoading: false,
+      });
     }
   },
 
   setSearchQuery: (query: string) => {
-    set({ searchQuery: query })
+    set({ searchQuery: query });
   },
 
   setSelectedType: (type: string | null) => {
-    set({ selectedType: type })
+    set({ selectedType: type });
   },
 
   setSortBy: (sortBy: SortBy) => {
-    set({ sortBy })
+    set({ sortBy });
   },
 
   setSortOrder: (sortOrder: SortOrder) => {
-    set({ sortOrder })
+    set({ sortOrder });
   },
 
   toggleSortOrder: () => {
-    set((state) => ({ sortOrder: state.sortOrder === 'asc' ? 'desc' : 'asc' }))
+    set((state) => ({ sortOrder: state.sortOrder === "asc" ? "desc" : "asc" }));
   },
 
   toggleFavorite: (modelId: string) => {
-    const { favorites } = get()
-    const newFavorites = new Set(favorites)
+    const { favorites } = get();
+    const newFavorites = new Set(favorites);
     if (newFavorites.has(modelId)) {
-      newFavorites.delete(modelId)
+      newFavorites.delete(modelId);
     } else {
-      newFavorites.add(modelId)
+      newFavorites.add(modelId);
     }
-    saveFavorites(newFavorites)
-    set({ favorites: newFavorites })
+    saveFavorites(newFavorites);
+    set({ favorites: newFavorites });
   },
 
   isFavorite: (modelId: string) => {
-    return get().favorites.has(modelId)
+    return get().favorites.has(modelId);
   },
 
   setShowFavoritesOnly: (show: boolean) => {
-    set({ showFavoritesOnly: show })
+    set({ showFavoritesOnly: show });
   },
 
   getFilteredModels: () => {
-    const { models, searchQuery, selectedType, sortBy, sortOrder, favorites, showFavoritesOnly } = get()
+    const {
+      models,
+      searchQuery,
+      selectedType,
+      sortBy,
+      sortOrder,
+      favorites,
+      showFavoritesOnly,
+    } = get();
 
     // First filter by favorites if enabled
     let filtered = showFavoritesOnly
-      ? models.filter(m => favorites.has(m.model_id))
-      : [...models]
+      ? models.filter((m) => favorites.has(m.model_id))
+      : [...models];
 
     // Then filter by type if selected
     if (selectedType) {
-      filtered = filtered.filter(m => m.type === selectedType)
+      filtered = filtered.filter((m) => m.type === selectedType);
     }
 
     // Then apply fuzzy search
@@ -139,37 +166,37 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       const results = fuzzySearch(filtered, searchQuery, (model) => [
         model.name,
         model.model_id,
-        model.description || '',
-        model.type || ''
-      ])
+        model.description || "",
+        model.type || "",
+      ]);
       // Return results sorted by match relevance (fuzzySearch already sorts by score)
-      return results.map(r => r.item)
+      return results.map((r) => r.item);
     }
 
     // Apply sorting only when not searching
     const sorted = [...filtered].sort((a, b) => {
-      let comparison = 0
+      let comparison = 0;
       switch (sortBy) {
-        case 'name':
-          comparison = a.name.localeCompare(b.name)
-          break
-        case 'price':
-          comparison = (a.base_price ?? 0) - (b.base_price ?? 0)
-          break
-        case 'type':
-          comparison = (a.type || '').localeCompare(b.type || '')
-          break
-        case 'sort_order':
-          comparison = (a.sort_order ?? 0) - (b.sort_order ?? 0)
-          break
+        case "name":
+          comparison = a.name.localeCompare(b.name);
+          break;
+        case "price":
+          comparison = (a.base_price ?? 0) - (b.base_price ?? 0);
+          break;
+        case "type":
+          comparison = (a.type || "").localeCompare(b.type || "");
+          break;
+        case "sort_order":
+          comparison = (a.sort_order ?? 0) - (b.sort_order ?? 0);
+          break;
       }
-      return sortOrder === 'asc' ? comparison : -comparison
-    })
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
 
-    return sorted
+    return sorted;
   },
 
   getModelById: (modelId: string) => {
-    return get().models.find(m => m.model_id === modelId)
-  }
-}))
+    return get().models.find((m) => m.model_id === modelId);
+  },
+}));

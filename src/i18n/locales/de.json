@@ -1348,41 +1348,37 @@
       },
       "nodePaletteBtn": {
         "title": "Knotenpalette",
-        "desc": "Klicken Sie auf diese Schaltfläche, um die Knotenpalette zu öffnen — Ihre Werkzeugkiste mit allen verfügbaren Knoten. Sie können auch suchen, ziehen oder klicken, um Knoten zur Leinwand hinzuzufügen."
+        "desc": "Klicken Sie auf diese Schaltfläche, um die Knotenpalette zu öffnen — Ihre Werkzeugkiste mit allen verfügbaren Knoten."
       },
       "nodePalette": {
         "title": "Knotenkategorien",
-        "desc": "Knoten sind nach Kategorien organisiert:\n• Eingabe — Dateien hochladen oder Text als Startdaten eingeben\n• AI-Aufgabe — Beliebiges WaveSpeed AI-Modell ausführen (siehe nächster Schritt)\n• Kostenlose Tools — 12 integrierte Tools wie Hintergrundentfernung, Gesichtsverbesserung, Formatkonvertierung\n• Ausgabe — Ergebnisse in der Vorschau anzeigen oder Dateien auf die Festplatte exportieren\n\nZiehen Sie einen Knoten auf die Leinwand oder klicken Sie, um ihn hinzuzufügen."
+        "desc": "Knoten sind in 5 Kategorien unterteilt:\n• AI-Modell — Beliebiges WaveSpeed AI-Modell ausführen\n• Eingabe — Mediendateien hochladen oder Text eingeben\n• Ausgabe — Dateien exportieren oder Ergebnisse in der Vorschau anzeigen\n• Verarbeitung — Ausgabeergebnisse verketten oder auswählen\n• Kostenlose Tools — 12 integrierte Tools (Hintergrundentfernung, Gesichtsverbesserung, Formatkonvertierung usw.)\n\nZiehen Sie einen Knoten auf die Leinwand oder klicken Sie, um ihn hinzuzufügen."
       },
       "aiTask": {
-        "title": "AI-Aufgabenknoten — Das Herzstück",
-        "desc": "Der AI-Aufgabenknoten ist der leistungsstärkste Knoten in Workflow. Er kann jedes WaveSpeed AI-Modell für Bilderzeugung, Videoerstellung, Stiltransfer und mehr ausführen.",
+        "title": "WaveSpeed API-Knoten",
+        "desc": "Der WaveSpeed API-Knoten ist das Herzstück Ihres Workflows — er kann jedes AI-Modell auf der Plattform ausführen. Wählen Sie ein Modell aus, und die Knotenkarte erweitert sich, um alle konfigurierbaren Parameter inline anzuzeigen. Nach der Ausführung werden die Ergebnisse ebenfalls direkt im Knoten angezeigt.",
         "features": {
-          "modelSwitch": "Wählen Sie aus Hunderten von AI-Modellen — das Parameterfeld aktualisiert sich dynamisch basierend auf dem ausgewählten Modell",
-          "dynamicParams": "Jedes Modell hat eigene Parameter (Prompt, Bildgröße, Seed usw.), die bei Auswahl automatisch angezeigt werden",
+          "modelSwitch": "Wählen Sie aus Hunderten von AI-Modellen — Parameter aktualisieren sich dynamisch basierend auf dem ausgewählten Modell",
+          "dynamicParams": "Jedes Modell hat eigene Parameter (Prompt, Bildgröße, Seed usw.), die automatisch im Knoten angezeigt werden",
           "costEstimate": "Echtzeit-Kostenschätzung pro Ausführung, damit Sie den Preis immer vor dem Start kennen",
           "upstream": "Verbinden Sie Ausgaben vorgelagerter Knoten (Bilder, Text) als Eingaben — erstellen Sie mehrstufige AI-Pipelines"
         }
       },
       "canvas": {
         "title": "Leinwand-Interaktionen",
-        "desc": "Die zentrale Leinwand ist Ihr Arbeitsbereich:\n• Ziehen Sie Knoten aus der Palette, um sie zu positionieren\n• Ziehen Sie von Ausgangsports zu Eingangsports, um Verbindungen zu erstellen\n• Rechtsklick für Kontextmenü (Kopieren, Einfügen, Löschen)\n• Scrollen zum Zoomen, Hintergrund ziehen zum Schwenken\n• Tastenkürzel: Ctrl+Z Rückgängig, Ctrl+C/V Kopieren/Einfügen, Delete zum Entfernen"
+        "desc": "Die Leinwand ist Ihr Arbeitsbereich:\n• Ziehen Sie Knoten, um sie zu positionieren\n• Ziehen Sie von Ausgangsports zu Eingangsports, um Verbindungen zu erstellen\n• Klicken Sie auf einen Knoten, um ihn auszuwählen — Parameter werden im Knoten zur Bearbeitung erweitert\n• Rechtsklick für Kontextmenü (Kopieren, Einfügen, Löschen)\n• Scrollen zum Zoomen, Hintergrund ziehen zum Schwenken\n• Tastenkürzel: Ctrl+Z Rückgängig, Ctrl+C/V Kopieren/Einfügen, Delete zum Entfernen"
       },
       "canvasTools": {
         "title": "Leinwand-Werkzeuge",
-        "desc": "Drei praktische Werkzeuge zum Navigieren und Organisieren Ihrer Leinwand:\n• Auswahl- / Handmodus — zwischen Knotenauswahl (V) und Leinwandschwenken (H) wechseln\n• Ansicht anpassen — automatisch zoomen, damit alle Knoten im Sichtfeld sind\n• Auto-Layout — Knoten automatisch in einem übersichtlichen, lesbaren Layout anordnen"
-      },
-      "config": {
-        "title": "Konfigurieren und Ergebnisse anzeigen",
-        "desc": "Klicken Sie auf einen Knoten, um ihn auszuwählen. Das rechte Panel zeigt zwei Tabs:\n• Konfiguration — Modellparameter festlegen, Dateien hochladen, Prompts eingeben\n• Ergebnisse — Ausführungsergebnisse anzeigen (Bilder, Videos, 3D-Modelle)\n\nParameter aktualisieren sich dynamisch basierend auf dem Knotentyp und dem ausgewählten Modell. Ergebnisse unterstützen Vollbildvorschau und Download."
+        "desc": "Werkzeugleiste rechts auf der Leinwand:\n• Raster — Hintergrundraster ein-/ausblenden\n• Auswahl / Hand — zwischen Knotenauswahl und Leinwandschwenken wechseln\n• Vergrößern / Verkleinern\n• Ansicht anpassen — automatisch zoomen, um alle Knoten anzuzeigen\n• Auto-Layout — Knoten automatisch übersichtlich anordnen"
       },
       "run": {
         "title": "Workflow ausführen",
-        "desc": "Klicken Sie auf „Workflow ausführen, um die gesamte Pipeline zu starten:\n• Legen Sie eine Ausführungsanzahl fest (×1 bis ×99) für Stapelverarbeitung\n• Jederzeit mit der Stopp-Schaltfläche abbrechen\n• Echtzeit-Fortschritt im Ausführungsmonitor überwachen\n• Jeder Knoten zeigt seinen Status: Warteschlange → Läuft → Fertig"
+        "desc": "Klicken Sie auf Run, um die gesamte Pipeline zu starten:\n• Legen Sie eine Ausführungsanzahl fest (×1 bis ×99) für Stapelverarbeitung\n• Jederzeit mit der Stopp-Schaltfläche abbrechen\n• Klicken Sie auf das Uhr-Symbol, um den Ausführungsmonitor für Echtzeit-Fortschritt zu öffnen\n• Jeder Knoten zeigt seinen Status: Warteschlange → Läuft → Fertig"
       },
-      "templates": {
-        "title": "Vorlagen, Import & Export",
-        "desc": "Klicken Sie auf das ⋮-Menü für erweiterte Funktionen:\n• Speichern Sie Ihren Workflow als wiederverwendbare Vorlage\n• Importieren/Exportieren Sie Workflows als JSON zum Teilen\n• Öffnen Sie mehrere Workflows in Tabs (wie ein Browser)\n• Durchsuchen Sie vorgefertigte Vorlagen in der Symbolleiste"
+      "moreMenu": {
+        "title": "Speichern, Import & Export",
+        "desc": "Klicken Sie auf das ⋮-Menü:\n• Speichern — aktuellen Workflow speichern\n• Als Vorlage speichern — Workflow als wiederverwendbare Vorlage speichern\n• Import / Export — Workflows als JSON-Dateien teilen"
       }
     },
     "promptOptimizer": {

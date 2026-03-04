@@ -1377,41 +1377,37 @@
       },
       "nodePaletteBtn": {
         "title": "Bang Node",
-        "desc": "Nhan nut nay de mo Bang Node — hop cong cu chua tat ca node co san. Ban cung co the tim kiem, keo tha, hoac nhan de them node vao canvas."
+        "desc": "Nhan nut nay de mo Bang Node — hop cong cu chua tat ca node co san."
       },
       "nodePalette": {
         "title": "Danh muc Node",
-        "desc": "Node duoc sap xep theo danh muc:\n• Dau vao — Tai tep len hoac nhap van ban lam du lieu bat dau\n• Tac vu AI — Chay bat ky mo hinh WaveSpeed AI nao (xem buoc tiep theo)\n• Cong cu mien phi — 12 cong cu tich hop nhu xoa nen, tang cuong khuon mat, chuyen doi dinh dang\n• Dau ra — Xem truoc ket qua hoac xuat tep ra dia\n\nKeo node vao canvas hoac nhan de them."
+        "desc": "Node duoc sap xep thanh 5 danh muc:\n• Mo hinh AI — Chay bat ky mo hinh WaveSpeed AI nao\n• Dau vao — Tai tep media len hoac nhap van ban\n• Dau ra — Xuat tep hoac xem truoc ket qua\n• Xu ly — Ket hop hoac chon ket qua\n• Cong cu mien phi — 12 cong cu tich hop (xoa nen, tang cuong khuon mat, chuyen doi dinh dang, v.v.)\n\nKeo node vao canvas hoac nhan de them."
       },
       "aiTask": {
-        "title": "Node Tac vu AI — Cot loi",
-        "desc": "Node Tac vu AI la node manh nhat trong Workflow. Node nay co the chay bat ky mo hinh WaveSpeed AI nao cho tao anh, tao video, chuyen phong cach va nhieu hon nua.",
+        "title": "Node WaveSpeed API",
+        "desc": "Node WaveSpeed API la cot loi cua Workflow — co the chay bat ky mo hinh AI nao tren nen tang. Khi chon mo hinh, the node se mo rong hien thi tat ca tham so cau hinh truc tiep. Sau khi chay, ket qua cung hien thi ngay trong node.",
         "features": {
-          "modelSwitch": "Chon trong hang tram mo hinh AI — bang tham so cap nhat dong theo mo hinh da chon",
-          "dynamicParams": "Moi mo hinh co tham so rieng (prompt, kich thuoc anh, seed, v.v.) va se tu dong hien khi duoc chon",
+          "modelSwitch": "Chon trong hang tram mo hinh AI — tham so cap nhat dong theo mo hinh da chon",
+          "dynamicParams": "Moi mo hinh co tham so rieng (prompt, kich thuoc anh, seed, v.v.) va se tu dong hien trong node khi duoc chon",
           "costEstimate": "Uoc tinh chi phi theo thoi gian thuc moi lan chay de ban biet gia truoc khi thuc thi",
           "upstream": "Ket noi dau ra tu node truoc (anh, van ban) lam dau vao — xay dung pipeline AI nhieu buoc"
         }
       },
       "canvas": {
         "title": "Tuong tac Canvas",
-        "desc": "Canvas trung tam la khong gian lam viec cua ban:\n• Keo node tu bang de dat vi tri\n• Keo tu cong dau ra sang cong dau vao de tao ket noi\n• Nhap chuot phai de mo menu ngu canh (sao chep, dan, xoa)\n• Cuon de zoom, keo nen de pan\n• Phim tat: Ctrl+Z hoan tac, Ctrl+C/V sao chep-dan, Delete de xoa"
+        "desc": "Canvas la khong gian lam viec cua ban:\n• Keo node de dat vi tri\n• Keo tu cong dau ra sang cong dau vao de tao ket noi\n• Nhan vao node de chon — tham so se mo rong trong node de chinh sua\n• Nhap chuot phai de mo menu ngu canh (sao chep, dan, xoa)\n• Cuon de zoom, keo nen de pan\n• Phim tat: Ctrl+Z hoan tac, Ctrl+C/V sao chep-dan, Delete de xoa"
       },
       "canvasTools": {
         "title": "Cong cu Canvas",
-        "desc": "Ba cong cu huu ich de dieu huong va sap xep canvas:\n• Che do Chon / Ban tay — chuyen giua chon node (V) va pan canvas (H)\n• Vua khung nhin — tu dong zoom de vua tat ca node trong vung nhin\n• Tu dong bo cuc — tu dong sap xep node gon gang, de doc"
-      },
-      "config": {
-        "title": "Cau hinh & Xem ket qua",
-        "desc": "Nhan vao bat ky node nao de chon. Bang ben phai hien thi 2 tab:\n• Cau hinh — Dat tham so mo hinh, tai tep len, nhap prompt\n• Ket qua — Xem dau ra thuc thi (anh, video, mo hinh 3D)\n\nTham so cap nhat dong theo loai node va mo hinh da chon. Ket qua ho tro xem toan man hinh va tai xuong."
+        "desc": "Thanh cong cu ben phai canvas:\n• Luoi — Hien/an luoi nen\n• Chon / Ban tay — chuyen giua chon node va pan canvas\n• Phong to / Thu nho\n• Vua khung nhin — tu dong zoom de vua tat ca node\n• Tu dong bo cuc — tu dong sap xep node gon gang, de doc"
       },
       "run": {
         "title": "Chay Workflow cua ban",
-        "desc": "Nhan \"Chay Workflow\" de thuc thi toan bo pipeline:\n• Dat so lan chay (×1 den ×99) cho xu ly hang loat\n• Huy bat cu luc nao bang nut dung\n• Theo doi tien do thoi gian thuc trong Execution Monitor\n• Moi node hien trang thai: queued → running → done"
+        "desc": "Nhan \"Run\" de thuc thi toan bo pipeline:\n• Dat so lan chay (×1 den ×99) cho xu ly hang loat\n• Huy bat cu luc nao bang nut dung\n• Nhan bieu tuong dong ho de mo Execution Monitor va theo doi tien do thoi gian thuc\n• Moi node hien trang thai: cho → dang chay → hoan thanh"
       },
-      "templates": {
-        "title": "Template, Nhap & Xuat",
-        "desc": "Nhan menu ⋮ de dung tinh nang nang cao:\n• Luu workflow thanh template co the tai su dung\n• Nhap/Xuat workflow dang JSON de chia se\n• Mo nhieu workflow theo tab (giong trinh duyet)\n• Duyet cac template co san tu thanh cong cu"
+      "moreMenu": {
+        "title": "Luu, Nhap va Xuat",
+        "desc": "Nhan menu ⋮:\n• Luu — Luu workflow hien tai\n• Luu lam template — Luu workflow thanh template co the tai su dung\n• Nhap / Xuat — Chia se workflow qua tep JSON"
       }
     },
     "selectNodeHint": "Select a node to configure its parameters",

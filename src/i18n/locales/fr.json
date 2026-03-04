@@ -1348,41 +1348,37 @@
       },
       "nodePaletteBtn": {
         "title": "Palette de nœuds",
-        "desc": "Cliquez sur ce bouton pour ouvrir la Palette de nœuds — votre boîte à outils de tous les nœuds disponibles. Vous pouvez également rechercher, glisser ou cliquer pour ajouter des nœuds au canevas."
+        "desc": "Cliquez sur ce bouton pour ouvrir la Palette de nœuds — votre boîte à outils de tous les nœuds disponibles."
       },
       "nodePalette": {
         "title": "Catégories de nœuds",
-        "desc": "Les nœuds sont organisés par catégorie :\n• Entrée — Téléchargez des fichiers ou saisissez du texte comme données de départ\n• Tâche AI — Exécutez n'importe quel modèle WaveSpeed AI (voir l'étape suivante)\n• Outils gratuits — 12 outils intégrés comme la suppression d'arrière-plan, l'amélioration des visages, la conversion de format\n• Sortie — Prévisualisez les résultats ou exportez les fichiers sur le disque\n\nGlissez un nœud sur le canevas ou cliquez pour l'ajouter."
+        "desc": "Les nœuds sont organisés en 5 catégories :\n• Modèle AI — Exécutez n'importe quel modèle WaveSpeed AI\n• Entrée — Téléchargez des fichiers média ou saisissez du texte\n• Sortie — Exportez des fichiers ou prévisualisez les résultats\n• Traitement — Combinez ou sélectionnez les résultats\n• Outils gratuits — 12 outils intégrés (suppression d'arrière-plan, amélioration des visages, conversion de format, etc.)\n\nGlissez un nœud sur le canevas ou cliquez pour l'ajouter."
       },
       "aiTask": {
-        "title": "Nœud Tâche AI — Le cœur",
-        "desc": "Le nœud Tâche AI est le nœud le plus puissant de Workflow. Il peut exécuter n'importe quel modèle WaveSpeed AI pour la génération d'images, la création vidéo, le transfert de style et plus encore.",
+        "title": "Nœud WaveSpeed API",
+        "desc": "Le nœud WaveSpeed API est le cœur de Workflow — il peut exécuter n'importe quel modèle AI de la plateforme. Lorsque vous sélectionnez un modèle, la carte du nœud s'étend pour afficher tous les paramètres configurables en ligne. Après l'exécution, les résultats s'affichent également directement dans le nœud.",
         "features": {
-          "modelSwitch": "Choisissez parmi des centaines de modèles AI — le panneau de paramètres se met à jour dynamiquement selon le modèle sélectionné",
-          "dynamicParams": "Chaque modèle a ses propres paramètres (prompt, taille d'image, seed, etc.) qui apparaissent automatiquement lors de la sélection",
+          "modelSwitch": "Choisissez parmi des centaines de modèles AI — les paramètres se mettent à jour dynamiquement selon le modèle sélectionné",
+          "dynamicParams": "Chaque modèle a ses propres paramètres (prompt, taille d'image, seed, etc.) qui apparaissent automatiquement dans le nœud lors de la sélection",
           "costEstimate": "Estimation du coût en temps réel par exécution, pour toujours connaître le prix avant de lancer",
           "upstream": "Connectez les sorties des nœuds en amont (images, texte) comme entrées — construisez des pipelines AI multi-étapes"
         }
       },
       "canvas": {
         "title": "Interactions du canevas",
-        "desc": "Le canevas central est votre espace de travail :\n• Glissez les nœuds depuis la palette pour les positionner\n• Glissez des ports de sortie vers les ports d'entrée pour créer des connexions\n• Clic droit pour le menu contextuel (copier, coller, supprimer)\n• Défilez pour zoomer, glissez l'arrière-plan pour naviguer\n• Raccourcis : Ctrl+Z annuler, Ctrl+C/V copier-coller, Delete pour supprimer"
+        "desc": "Le canevas est votre espace de travail :\n• Glissez les nœuds pour les positionner\n• Glissez des ports de sortie vers les ports d'entrée pour créer des connexions\n• Cliquez sur un nœud pour le sélectionner — les paramètres s'étendent dans le nœud pour l'édition\n• Clic droit pour le menu contextuel (copier, coller, supprimer)\n• Défilez pour zoomer, glissez l'arrière-plan pour naviguer\n• Raccourcis : Ctrl+Z annuler, Ctrl+C/V copier-coller, Delete pour supprimer"
       },
       "canvasTools": {
         "title": "Outils du canevas",
-        "desc": "Trois outils pratiques pour naviguer et organiser votre canevas :\n• Mode Sélection / Main — basculez entre la sélection de nœuds (V) et le déplacement du canevas (H)\n• Ajuster la vue — zoom automatique pour afficher tous les nœuds dans la fenêtre\n• Disposition automatique — arrange automatiquement les nœuds de manière claire et lisible"
-      },
-      "config": {
-        "title": "Configurer et voir les résultats",
-        "desc": "Cliquez sur un nœud pour le sélectionner. Le panneau droit affiche deux onglets :\n• Config — Définir les paramètres du modèle, télécharger des fichiers, saisir des prompts\n• Résultats — Voir les sorties d'exécution (images, vidéos, modèles 3D)\n\nLes paramètres se mettent à jour dynamiquement selon le type de nœud et le modèle sélectionné. Les résultats supportent l'aperçu plein écran et le téléchargement."
+        "desc": "Barre d'outils à droite du canevas :\n• Grille — Afficher/masquer la grille d'arrière-plan\n• Sélection / Main — basculez entre la sélection de nœuds et le déplacement du canevas\n• Zoom avant / Zoom arrière\n• Ajuster la vue — zoom automatique pour afficher tous les nœuds\n• Disposition automatique — arrange automatiquement les nœuds de manière claire et lisible"
       },
       "run": {
         "title": "Exécuter votre workflow",
-        "desc": "Cliquez sur « Exécuter le workflow » pour lancer l'ensemble du pipeline :\n• Définissez un nombre d'exécutions (×1 à ×99) pour le traitement par lots\n• Annulez à tout moment avec le bouton d'arrêt\n• Surveillez la progression en temps réel dans le Moniteur d'exécution\n• Chaque nœud affiche son statut : en attente → en cours → terminé"
+        "desc": "Cliquez sur « Run » pour lancer l'ensemble du pipeline :\n• Définissez un nombre d'exécutions (×1 à ×99) pour le traitement par lots\n• Annulez à tout moment avec le bouton d'arrêt\n• Cliquez sur l'icône horloge pour ouvrir le Moniteur d'exécution et suivre la progression en temps réel\n• Chaque nœud affiche son statut : en attente → en cours → terminé"
       },
-      "templates": {
-        "title": "Modèles, import et export",
-        "desc": "Cliquez sur le menu ⋮ pour les fonctionnalités avancées :\n• Enregistrez votre workflow comme modèle réutilisable\n• Importez/Exportez des workflows en JSON pour les partager\n• Ouvrez plusieurs workflows dans des onglets (comme un navigateur)\n• Parcourez les modèles prédéfinis depuis la barre d'outils"
+      "moreMenu": {
+        "title": "Enregistrer, importer et exporter",
+        "desc": "Cliquez sur le menu ⋮ :\n• Enregistrer — Sauvegarder le workflow actuel\n• Enregistrer comme modèle — Sauvegarder le workflow comme modèle réutilisable\n• Importer / Exporter — Partager des workflows via des fichiers JSON"
       }
     },
     "promptOptimizer": {

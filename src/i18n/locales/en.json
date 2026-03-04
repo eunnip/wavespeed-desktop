@@ -124,6 +124,8 @@
     "title": "Playground",
     "selectModel": "Select a model",
     "searchModels": "Search models...",
+    "modelSelector": "Model Selector",
+    "specificFunction": "Specific Model Function",
     "noModelSelected": "No model selected",
     "selectModelPrompt": "Select a model to configure parameters",
     "run": "Run",
@@ -146,6 +148,8 @@
     "webPage": "WebPage",
     "docs": "Docs",
     "noTabs": "No playground tabs open",
+    "openSessions": "Open Sessions",
+    "workspace": "Workspace",
     "tabs": {
       "newTab": "New Tab",
       "closeTab": "Close tab",
@@ -195,6 +199,7 @@
       "removeFile": "Remove File",
       "removeFileConfirm": "Are you sure you want to remove this file?"
     },
+    "generationComplete": "Generation complete",
     "autoSaved": "Auto-saved to Assets",
     "autoSavedDesc": "Saved {{count}} output(s) to My Assets",
     "savedToAssets": "Saved to Assets",
@@ -263,7 +268,27 @@
     },
     "history": {
       "title": "History"
-    }
+    },
+    "rightPanel": {
+      "explore": "Explore",
+      "allModels": "All Models",
+      "models": "Models",
+      "featuredModels": "Featured Models",
+      "resultsHub": "Results Hub",
+      "result": "Result",
+      "templates": "Templates",
+      "assets": "My Assets"
+    },
+    "explore": {
+      "searchPlaceholder": "Search models, LoRAs, and styles...",
+      "all": "All",
+      "allModels": "All Models",
+      "favorites": "Favorites",
+      "noFavorites": "No favorites yet — star a model to save it here",
+      "searchResults": "{{count}} results"
+    },
+    "recentGenerations": "Recent Generations",
+    "viewAll": "View All"
   },
   "history": {
     "title": "History",
@@ -1382,41 +1407,37 @@
       },
       "nodePaletteBtn": {
         "title": "Node Palette",
-        "desc": "Click this button to open the Node Palette — your toolbox of all available nodes. You can also search, drag, or click to add nodes to the canvas."
+        "desc": "Click this button to open the Node Palette — your toolbox of all available nodes."
       },
       "nodePalette": {
         "title": "Node Categories",
-        "desc": "Nodes are organized by category:\n• Input — Upload files or enter text as starting data\n• AI Task — Run any WaveSpeed AI model (see next step)\n• Free Tools — 12 built-in tools like background removal, face enhancement, format conversion\n• Output — Preview results or export files to disk\n\nDrag a node to the canvas or click to add it."
+        "desc": "Nodes are organized into 5 categories:\n• AI Model — Run any WaveSpeed AI model\n• Input — Upload media files or enter text\n• Output — Export files or preview results\n• Processing — Combine or select outputs\n• Free Tools — 12 built-in tools (background removal, face enhancement, format conversion, etc.)\n\nDrag a node to the canvas or click to add it."
       },
       "aiTask": {
-        "title": "AI Task Node — The Core",
-        "desc": "The AI Task node is the most powerful node in Workflow. It can run any WaveSpeed AI model for image generation, video creation, style transfer, and more.",
+        "title": "WaveSpeed API Node",
+        "desc": "The WaveSpeed API node is the core of Workflow — it can run any AI model on the platform. When you select a model, the node card expands to show all configurable parameters inline. After execution, results are also displayed directly inside the node.",
         "features": {
-          "modelSwitch": "Choose from hundreds of AI models — the parameter panel updates dynamically based on the selected model",
-          "dynamicParams": "Each model has its own parameters (prompt, image size, seed, etc.) that appear automatically when selected",
+          "modelSwitch": "Choose from hundreds of AI models — parameters update dynamically based on the selected model",
+          "dynamicParams": "Each model has its own parameters (prompt, image size, seed, etc.) that appear automatically inside the node when selected",
           "costEstimate": "Real-time cost estimation per execution, so you always know the price before running",
           "upstream": "Connect upstream node outputs (images, text) as inputs — build multi-step AI pipelines"
         }
       },
       "canvas": {
         "title": "Canvas Interactions",
-        "desc": "The central canvas is your workspace:\n• Drag nodes from the palette to position them\n• Drag from output ports to input ports to create connections\n• Right-click for context menu (copy, paste, delete)\n• Scroll to zoom, drag background to pan\n• Shortcuts: Ctrl+Z undo, Ctrl+C/V copy-paste, Delete to remove"
+        "desc": "The canvas is your workspace:\n• Drag nodes to position them\n• Drag from output ports to input ports to create connections\n• Click a node to select it — parameters expand inside the node for editing\n• Right-click for context menu (copy, paste, delete)\n• Scroll to zoom, drag background to pan\n• Shortcuts: Ctrl+Z undo, Ctrl+C/V copy-paste, Delete to remove"
       },
       "canvasTools": {
         "title": "Canvas Tools",
-        "desc": "Three handy tools for navigating and organizing your canvas:\n• Select / Hand mode — toggle between selecting nodes (V) and panning the canvas (H)\n• Fit View — auto-zoom to fit all nodes in the viewport\n• Auto Layout — automatically arrange nodes in a clean, readable layout"
-      },
-      "config": {
-        "title": "Configure & View Results",
-        "desc": "Click any node to select it. Config and Results appear inside the node card:\n• Config — Set model parameters, upload files, enter prompts\n• Results — View execution outputs (images, videos, 3D models)\n\nParameters update dynamically based on the node type and selected model. Results support fullscreen preview and download."
+        "desc": "Right-side toolbar on the canvas:\n• Grid — Toggle background grid display\n• Select / Hand — Switch between selecting nodes and panning the canvas\n• Zoom in / Zoom out\n• Fit View — Auto-zoom to fit all nodes in the viewport\n• Auto Layout — Automatically arrange nodes in a clean, readable layout"
       },
       "run": {
         "title": "Run Your Workflow",
-        "desc": "Click \"Run\" to execute the entire pipeline:\n• Set a run count (×1 to ×99) for batch processing\n• Cancel anytime with the stop button\n• Monitor real-time progress in the Execution Monitor\n• Each node shows its status: queued → running → done"
+        "desc": "Click \"Run\" to execute the entire pipeline:\n• Set a run count (×1 to ×99) for batch processing\n• Cancel anytime with the stop button\n• Click the clock icon to open the Execution Monitor and track real-time progress\n• Each node shows its status: queued → running → done"
       },
-      "templates": {
-        "title": "Templates, Import & Export",
-        "desc": "Click the ⋮ menu for advanced features:\n• Save your workflow as a reusable template\n• Import/Export workflows as JSON to share\n• Open multiple workflows in tabs (like a browser)\n• Browse pre-built templates from the toolbar"
+      "moreMenu": {
+        "title": "Save, Import & Export",
+        "desc": "Click the ⋮ menu:\n• Save — Save the current workflow\n• Save as Template — Save the workflow as a reusable template\n• Import / Export — Share workflows via JSON files"
       }
     },
     "promptOptimizer": {
