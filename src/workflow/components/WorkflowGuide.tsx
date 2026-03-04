@@ -463,9 +463,7 @@ export function WorkflowGuide({
         }}
       >
         {/* Content — scrollable */}
-        <div
-          className="px-5 pt-5 pb-3 overflow-y-auto flex-1 min-h-0"
-        >
+        <div className="px-5 pt-5 pb-3 overflow-y-auto flex-1 min-h-0">
           <h3 className="text-sm font-semibold mb-2 text-foreground">
             {t(`workflow.guide.${current.key}.title`, current.key)}
           </h3>

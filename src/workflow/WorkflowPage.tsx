@@ -507,7 +507,10 @@ export function WorkflowPage() {
   useEffect(() => {
     if (!wfTabListOpen) return;
     const handler = (e: MouseEvent) => {
-      if (wfTabListRef.current && !wfTabListRef.current.contains(e.target as Node)) {
+      if (
+        wfTabListRef.current &&
+        !wfTabListRef.current.contains(e.target as Node)
+      ) {
         setWfTabListOpen(false);
       }
     };
@@ -1444,7 +1447,10 @@ export function WorkflowPage() {
             clipPath: `polygon(0 0, 100% 0, 100% 40px, calc(100% - 16px) 100%, 0 100%)`,
           }}
         >
-          <h1 ref={wfTitleRef} className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-2 whitespace-nowrap">
+          <h1
+            ref={wfTitleRef}
+            className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-2 whitespace-nowrap"
+          >
             <GitBranch className="h-5 w-5 text-primary" />
             {t("nav.workflow")}
           </h1>
@@ -1455,10 +1461,29 @@ export function WorkflowPage() {
           style={{ width: wfTitleWidth, height: 60 }}
           fill="none"
         >
-          <line x1="0" y1="60" x2={wfTitleWidth - 16} y2="60" className="stroke-border" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-          <line x1={wfTitleWidth - 16} y1="60" x2={wfTitleWidth} y2="40" className="stroke-border" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <line
+            x1="0"
+            y1="60"
+            x2={wfTitleWidth - 16}
+            y2="60"
+            className="stroke-border"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+          <line
+            x1={wfTitleWidth - 16}
+            y1="60"
+            x2={wfTitleWidth}
+            y2="40"
+            className="stroke-border"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
         </svg>
-        <div className="flex items-center border-b border-border px-2 gap-1.5 h-10 bg-background" style={{ paddingLeft: wfTitleWidth }}>
+        <div
+          className="flex items-center border-b border-border px-2 gap-1.5 h-10 bg-background"
+          style={{ paddingLeft: wfTitleWidth }}
+        >
           {/* Tab list dropdown button */}
           <div ref={wfTabListRef} className="relative shrink-0">
             <button
@@ -1470,7 +1495,9 @@ export function WorkflowPage() {
               }`}
               title={t("workflow.allTabs", "All Tabs")}
             >
-              <ChevronDown className={`h-4 w-4 transition-transform ${wfTabListOpen ? "rotate-180" : ""}`} />
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${wfTabListOpen ? "rotate-180" : ""}`}
+              />
             </button>
             {wfTabListOpen && (
               <div className="absolute z-50 mt-1 left-0 min-w-[320px] max-h-[400px] overflow-y-auto rounded-xl border border-border/80 bg-popover shadow-xl animate-in fade-in-0 zoom-in-95">
@@ -1495,11 +1522,16 @@ export function WorkflowPage() {
                       >
                         <GitBranch className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <div className="flex-1 min-w-0">
-                          <div className="truncate font-medium">{tab.workflowName}</div>
+                          <div className="truncate font-medium">
+                            {tab.workflowName}
+                          </div>
                           {tab.createdAt && (
                             <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground mt-0.5">
                               <Clock className="h-2.5 w-2.5" />
-                              {new Date(tab.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              {new Date(tab.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </div>
                           )}
                         </div>

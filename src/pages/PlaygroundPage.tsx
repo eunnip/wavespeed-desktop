@@ -684,7 +684,10 @@ export function PlaygroundPage() {
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
-                      {t("playground.rightPanel.featuredModels", "Featured Models")}
+                      {t(
+                        "playground.rightPanel.featuredModels",
+                        "Featured Models",
+                      )}
                     </TooltipContent>
                   </Tooltip>
                   <Tooltip delayDuration={200}>

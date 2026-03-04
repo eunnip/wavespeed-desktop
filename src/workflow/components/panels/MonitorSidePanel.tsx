@@ -352,7 +352,6 @@ function SessionCard({
             <span className="text-muted-foreground/60 ml-2">
               {elapsedStr} ago
             </span>
-
           </div>
         </div>
         <button

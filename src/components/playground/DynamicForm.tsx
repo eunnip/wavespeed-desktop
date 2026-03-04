@@ -252,9 +252,7 @@ export function DynamicForm({
 
   // Collapsible: render all fields flat (primary + advanced together)
   const formContent = (
-    <div className="space-y-4 py-2">
-      {fields.map(renderField)}
-    </div>
+    <div className="space-y-4 py-2">{fields.map(renderField)}</div>
   );
 
   if (!scrollable) return formContent;

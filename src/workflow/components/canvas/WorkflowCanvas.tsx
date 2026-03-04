@@ -170,8 +170,8 @@ function CanvasZoomControls() {
         </TooltipTrigger>
         <TooltipContent side="left">
           {interactionMode === "select"
-            ? t("workflow.selectMode", "Select (V)")
-            : t("workflow.handMode", "Hand (H)")}
+            ? t("workflow.selectMode", "Select (V / Space)")
+            : t("workflow.handMode", "Hand (H / Space)")}
         </TooltipContent>
       </Tooltip>
       <div className="h-px bg-border" />
@@ -399,7 +399,7 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
         event.preventDefault();
         redo();
       }
-      // V = Select mode, H = Hand (pan) mode
+      // V = Select mode, H = Hand (pan) mode, Space = Toggle
       if (event.key === "v" || event.key === "V") {
         if (!ctrlOrCmd) {
           setInteractionMode("select");
@@ -409,6 +409,11 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
         if (!ctrlOrCmd) {
           setInteractionMode("hand");
         }
+      }
+      if (event.key === " ") {
+        event.preventDefault();
+        const current = useUIStore.getState().interactionMode;
+        setInteractionMode(current === "select" ? "hand" : "select");
       }
       if (ctrlOrCmd && event.key === "v") {
         event.preventDefault();
@@ -454,6 +459,47 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
     recordRecentNodeType,
     onNodesChange,
   ]);
+
+  // Touch gesture handling: 2 fingers = pan, 3 fingers = select, pinch = zoom (native)
+  useEffect(() => {
+    const wrapper = reactFlowWrapper.current;
+    if (!wrapper) return;
+
+    let modeBeforeTouch: "select" | "hand" | null = null;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length >= 3) {
+        // 3+ fingers → select mode
+        modeBeforeTouch = useUIStore.getState().interactionMode;
+        if (modeBeforeTouch !== "select") {
+          setInteractionMode("select");
+        }
+      } else if (e.touches.length === 2) {
+        // 2 fingers → pan mode (pinch zoom handled natively by ReactFlow)
+        modeBeforeTouch = useUIStore.getState().interactionMode;
+        if (modeBeforeTouch !== "hand") {
+          setInteractionMode("hand");
+        }
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      // Restore previous mode when all fingers are lifted
+      if (e.touches.length === 0 && modeBeforeTouch !== null) {
+        setInteractionMode(modeBeforeTouch);
+        modeBeforeTouch = null;
+      }
+    };
+
+    wrapper.addEventListener("touchstart", onTouchStart, { passive: true });
+    wrapper.addEventListener("touchend", onTouchEnd, { passive: true });
+    wrapper.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    return () => {
+      wrapper.removeEventListener("touchstart", onTouchStart);
+      wrapper.removeEventListener("touchend", onTouchEnd);
+      wrapper.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [setInteractionMode]);
 
   const onConnect = useCallback(
     (connection: Connection) => addEdge(connection),
@@ -1128,6 +1174,7 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
           selectionMode={SelectionMode.Partial}
           multiSelectionKeyCode="Shift"
           panOnDrag={interactionMode === "hand"}
+          panOnScroll
           deleteKeyCode={null}
           minZoom={0.05}
           maxZoom={2.5}
