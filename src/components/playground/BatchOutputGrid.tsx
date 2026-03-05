@@ -170,7 +170,13 @@ export function BatchOutputGrid({
   const autoSavedIndexesRef = useRef<Set<number>>(new Set());
   const prevRunningRef = useRef(false);
 
-  const { saveAsset, settings, hasAssetForPrediction } = useAssetsStore();
+  const { saveAsset, settings, loadSettings, hasAssetForPrediction } =
+    useAssetsStore();
+
+  // Ensure settings are loaded (auto-save depends on settings.autoSaveAssets)
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   const completedResults = results.filter((r) => !r.error);
   const completedCount = completedResults.length;

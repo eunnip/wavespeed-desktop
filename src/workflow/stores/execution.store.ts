@@ -513,6 +513,18 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
                 },
               };
             });
+            // Auto-save to My Assets
+            const node = browserNodes.find((n) => n.id === nid);
+            if (node) {
+              const wfName = importedWorkflowStore?.getState().workflowName;
+              autoSaveWorkflowResults(
+                nid,
+                node.data.nodeType,
+                urls,
+                node.data.params,
+                wfName,
+              );
+            }
           },
         },
         {
