@@ -183,7 +183,7 @@ export function FeaturedModelsPanel({
     <ScrollArea className="flex-1">
       <div className="p-3 space-y-3">
         {/* Header */}
-        <div className="pb-1">
+        <div className="pb-1 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both">
           <h3 className="text-2xl font-bold tracking-tight text-foreground">
             Featured Models
           </h3>
@@ -195,12 +195,18 @@ export function FeaturedModelsPanel({
         </div>
 
         {/* Top row: 3 poster cards (3:4) */}
-        <div className="grid grid-cols-3 gap-2">
+        <div
+          className="grid grid-cols-3 gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
+          style={{ animationDelay: "80ms" }}
+        >
           {posters.map((f) => card(f, "aspect-[3/4]"))}
         </div>
 
         {/* Bottom row: 4 square cards (1:1) */}
-        <div className="grid grid-cols-4 gap-2">
+        <div
+          className="grid grid-cols-4 gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
+          style={{ animationDelay: "160ms" }}
+        >
           {squares.map((f) => card(f, "aspect-square"))}
         </div>
       </div>

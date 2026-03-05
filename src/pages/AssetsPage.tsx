@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useAssetsStore } from "@/stores/assetsStore";
+import { usePageActive } from "@/hooks/usePageActive";
 import { formatBytes } from "@/types/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -180,6 +181,7 @@ function getAssetUrl(asset: AssetMetadata): string {
 
 export function AssetsPage() {
   const { t } = useTranslation();
+  const isActive = usePageActive("/assets");
   const {
     assets,
     isLoaded,
@@ -459,7 +461,7 @@ export function AssetsPage() {
 
   // Keyboard navigation for preview dialog
   useEffect(() => {
-    if (!previewAsset) return;
+    if (!previewAsset || !isActive) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -471,14 +473,16 @@ export function AssetsPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [previewAsset, navigateAsset]);
+  }, [isActive, previewAsset, navigateAsset]);
 
   const AssetCard = ({
     asset,
     assetKey,
+    index,
   }: {
     asset: AssetMetadata;
     assetKey: string;
+    index: number;
   }) => {
     const { ref, isInView } = useInView<HTMLDivElement>();
     const assetUrl = getAssetUrl(asset);
@@ -493,9 +497,10 @@ export function AssetsPage() {
     return (
       <div
         className={cn(
-          "group relative overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm transition-all hover:shadow-md",
+          "group relative overflow-hidden rounded-xl border border-border/70 bg-card/85 shadow-sm transition-all hover:shadow-md animate-in fade-in slide-in-from-bottom-2 fill-mode-both",
           selectedIds.has(asset.id) && "ring-2 ring-primary",
         )}
+        style={{ animationDelay: `${Math.min(index, 19) * 30}ms` }}
       >
         {/* Thumbnail */}
         <div
@@ -681,7 +686,7 @@ export function AssetsPage() {
   return (
     <div className="flex h-full flex-col pt-12 md:pt-0">
       {/* Header */}
-      <div className="page-header px-4 md:px-6 py-4 border-b border-border/70">
+      <div className="page-header px-4 md:px-6 py-4 border-b border-border/70 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both">
         <div className="flex flex-col gap-1.5 md:flex-row md:items-baseline md:gap-3 mb-4">
           <h1 className="flex items-center gap-2 text-xl md:text-2xl font-bold tracking-tight">
             <FolderHeart className="h-5 w-5 text-primary" />
@@ -968,10 +973,15 @@ export function AssetsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 p-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {paginatedAssets.map((asset) => {
+            {paginatedAssets.map((asset, index) => {
               const assetKey = asset.filePath || asset.originalUrl || asset.id;
               return (
-                <AssetCard key={assetKey} asset={asset} assetKey={assetKey} />
+                <AssetCard
+                  key={assetKey}
+                  asset={asset}
+                  assetKey={assetKey}
+                  index={index}
+                />
               );
             })}
           </div>

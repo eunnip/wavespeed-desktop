@@ -253,7 +253,7 @@ export function WelcomePage() {
     <div className="min-h-full flex flex-col bg-background">
       {/* Hero Section */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-4">
-        <div className="text-center mb-5">
+        <div className="text-center mb-5 animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both">
           {/* Logo and Title */}
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="relative">
@@ -276,8 +276,14 @@ export function WelcomePage() {
         {/* Feature Cards Grid */}
         <div className="w-full max-w-5xl mx-auto mb-5">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
-            {features.map((feature) => (
-              <FeatureCard key={feature.href} {...feature} />
+            {features.map((feature, index) => (
+              <div
+                key={feature.href}
+                className="animate-in fade-in slide-in-from-bottom-2 fill-mode-both"
+                style={{ animationDelay: `${index * 60}ms` }}
+              >
+                <FeatureCard {...feature} />
+              </div>
             ))}
           </div>
         </div>

@@ -7,7 +7,7 @@ import {
   useTransition,
 } from "react";
 import { flushSync } from "react-dom";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   usePlaygroundStore,
@@ -18,6 +18,7 @@ import { useModelsStore } from "@/stores/modelsStore";
 import { useApiKeyStore } from "@/stores/apiKeyStore";
 import { apiClient } from "@/api/client";
 import { useTemplateStore } from "@/stores/templateStore";
+import { usePageActive } from "@/hooks/usePageActive";
 import { DynamicForm } from "@/components/playground/DynamicForm";
 import { ModelSelector } from "@/components/playground/ModelSelector";
 import { BatchControls } from "@/components/playground/BatchControls";
@@ -77,9 +78,23 @@ const isCapacitorNative = () => {
 
 export function PlaygroundPage() {
   const { t } = useTranslation();
-  const params = useParams();
-  // Support both old format (playground/:modelId) and new format (playground/*)
-  const modelId = params["*"] || params.modelId;
+  const location = useLocation();
+  const isActive = usePageActive("/playground");
+  // Extract modelId from pathname: /playground/some/model/id → "some/model/id"
+  const modelId = useMemo(() => {
+    const prefix = "/playground/";
+    if (location.pathname.startsWith(prefix)) {
+      const raw = location.pathname.slice(prefix.length);
+      if (raw) {
+        try {
+          return decodeURIComponent(raw);
+        } catch {
+          return raw;
+        }
+      }
+    }
+    return undefined;
+  }, [location.pathname]);
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { models, fetchModels } = useModelsStore();
@@ -187,7 +202,7 @@ export function PlaygroundPage() {
   // Persist rightPanelTab across navigation using sessionStorage
   const [rightPanelTab, setRightPanelTab] = useState<RightPanelTab>(() => {
     // If arriving with a modelId in the URL, go straight to result
-    if (params["*"] || params.modelId) return "result";
+    if (modelId) return "result";
     const saved = sessionStorage.getItem(
       "pg_rightPanelTab",
     ) as RightPanelTab | null;
@@ -311,7 +326,7 @@ export function PlaygroundPage() {
     return generateBatchInputs();
   }, [activeTab, generateBatchInputs]);
 
-  // Migrate templates and load on mount
+  // Migrate templates and load on mount (runs once since page is persistent)
   useEffect(() => {
     const init = async () => {
       await migrateFromLocalStorage();
@@ -319,7 +334,7 @@ export function PlaygroundPage() {
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, []);
 
   // Hydrate playground session from Electron persistent storage on first mount
   useEffect(() => {
@@ -350,7 +365,7 @@ export function PlaygroundPage() {
     }
   }, [isValidated, fetchModels]);
 
-  // Calculate dynamic pricing with debounce
+  // Calculate dynamic pricing with debounce — deferred start
   useEffect(() => {
     if (!activeTab?.selectedModel || !apiKey) {
       setCalculatedPrice(null);
@@ -374,7 +389,7 @@ export function PlaygroundPage() {
       } finally {
         setIsPricingLoading(false);
       }
-    }, 500);
+    }, 800);
 
     return () => {
       if (pricingTimeoutRef.current) {
@@ -511,6 +526,7 @@ export function PlaygroundPage() {
 
   // Ctrl+Enter / Cmd+Enter to run; Ctrl+W / Cmd+W to close active tab
   useEffect(() => {
+    if (!isActive) return;
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
         e.preventDefault();
@@ -525,7 +541,7 @@ export function PlaygroundPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [activeTab, activeTabId, handleRun, closeTab]);
+  }, [isActive, activeTab, activeTabId, handleRun, closeTab]);
 
   const handleReset = () => {
     resetForm();
@@ -706,7 +722,8 @@ export function PlaygroundPage() {
 
         <div
           ref={containerRef}
-          className="flex flex-1 flex-col overflow-hidden md:flex-row"
+          className="flex flex-1 flex-col overflow-hidden md:flex-row animate-in fade-in duration-300 fill-mode-both"
+          style={{ animationDelay: "80ms" }}
         >
           {/* Left Panel - Configuration (always visible) */}
           <div
@@ -719,7 +736,7 @@ export function PlaygroundPage() {
             style={{ flexBasis: `${leftPanelWidth}px` }}
           >
             {/* Page Title + quick-nav chips */}
-            <div className="px-4 md:px-6 py-4 pt-14 md:pt-4 border-b border-border shrink-0">
+            <div className="px-4 md:px-6 py-4 pt-14 md:pt-4 border-b border-border shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both">
               <div className="flex items-end gap-2">
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-2 shrink-0 leading-none">
                   <PlayCircle className="h-5 w-5 text-primary" />

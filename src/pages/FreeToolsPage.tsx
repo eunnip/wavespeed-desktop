@@ -155,7 +155,7 @@ export function FreeToolsPage() {
 
   return (
     <div className="flex h-full flex-col pt-12 md:pt-0">
-      <div className="page-header px-4 md:px-6 py-4 border-b border-border/70">
+      <div className="page-header px-4 md:px-6 py-4 border-b border-border/70 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both">
         <div className="flex flex-col gap-1.5 md:flex-row md:items-baseline md:gap-3">
           <h1 className="flex items-center gap-2 text-xl md:text-2xl font-bold tracking-tight">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -168,7 +168,10 @@ export function FreeToolsPage() {
       </div>
 
       <div className="flex-1 overflow-auto p-4 md:p-6">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
+        <div
+          className="mx-auto grid max-w-7xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
+          style={{ animationDelay: "80ms" }}
+        >
           {tools.map((tool, index) => (
             <Card
               key={tool.id}

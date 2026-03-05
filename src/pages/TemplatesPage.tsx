@@ -168,7 +168,7 @@ export function TemplatesPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header + Top Bar */}
-      <div className="px-4 md:px-6 py-4 pt-14 md:pt-4">
+      <div className="px-4 md:px-6 py-4 pt-14 md:pt-4 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both">
         <h1 className="text-xl md:text-2xl font-bold tracking-tight mb-5 flex items-center gap-2">
           <FolderOpen className="h-5 w-5 text-primary" />
           {t("templates.title")}
@@ -216,7 +216,10 @@ export function TemplatesPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden border-t border-border/50">
+      <div
+        className="flex flex-1 overflow-hidden border-t border-border/50 animate-in fade-in duration-300 fill-mode-both"
+        style={{ animationDelay: "100ms" }}
+      >
         <TemplateBrowser
           templateType={templateType}
           onUseTemplate={handleUseTemplate}

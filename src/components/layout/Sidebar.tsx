@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -32,6 +32,50 @@ interface NavItem {
   matchPrefix?: boolean;
 }
 
+// Static nav data — defined outside component to avoid re-creation on every render
+const createItems: NavItem[] = [
+  { titleKey: "nav.home", href: "/", icon: Home },
+  { titleKey: "nav.models", href: "/models", icon: Layers },
+  {
+    titleKey: "nav.playground",
+    href: "/playground",
+    icon: PlayCircle,
+    matchPrefix: true,
+  },
+];
+
+const manageItems: NavItem[] = [
+  { titleKey: "nav.templates", href: "/templates", icon: FolderOpen },
+  { titleKey: "nav.history", href: "/history", icon: History },
+  { titleKey: "nav.assets", href: "/assets", icon: FolderHeart },
+];
+
+const toolsItems: NavItem[] = [
+  {
+    titleKey: "nav.workflow",
+    href: "/workflow",
+    icon: GitBranch,
+    matchPrefix: true,
+  },
+  {
+    titleKey: "nav.freeTools",
+    href: "/free-tools",
+    icon: Sparkles,
+    matchPrefix: true,
+  },
+  { titleKey: "nav.zImage", href: "/z-image", icon: Zap },
+];
+
+const navGroups = [
+  { key: "create", label: "Create", items: createItems },
+  { key: "manage", label: "Manage", items: manageItems },
+  { key: "tools", label: "Tools", items: toolsItems },
+];
+
+const bottomNavItems: NavItem[] = [
+  { titleKey: "nav.settings", href: "/settings", icon: Settings },
+];
+
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -40,7 +84,7 @@ interface SidebarProps {
   onMobileClose?: () => void;
 }
 
-export function Sidebar({
+export const Sidebar = memo(function Sidebar({
   collapsed,
   onToggle,
   lastFreeToolsPage,
@@ -88,63 +132,6 @@ export function Sidebar({
     };
   }, []);
 
-  const createItems: NavItem[] = [
-    {
-      titleKey: "nav.home",
-      href: "/",
-      icon: Home,
-    },
-    {
-      titleKey: "nav.models",
-      href: "/models",
-      icon: Layers,
-    },
-    {
-      titleKey: "nav.playground",
-      href: "/playground",
-      icon: PlayCircle,
-      matchPrefix: true,
-    },
-  ];
-
-  const manageItems: NavItem[] = [
-    {
-      titleKey: "nav.templates",
-      href: "/templates",
-      icon: FolderOpen,
-    },
-    {
-      titleKey: "nav.history",
-      href: "/history",
-      icon: History,
-    },
-    {
-      titleKey: "nav.assets",
-      href: "/assets",
-      icon: FolderHeart,
-    },
-  ];
-
-  const toolsItems: NavItem[] = [
-    {
-      titleKey: "nav.workflow",
-      href: "/workflow",
-      icon: GitBranch,
-      matchPrefix: true,
-    },
-    {
-      titleKey: "nav.freeTools",
-      href: "/free-tools",
-      icon: Sparkles,
-      matchPrefix: true,
-    },
-    {
-      titleKey: "nav.zImage",
-      href: "/z-image",
-      icon: Zap,
-    },
-  ];
-
   // Check if a nav item is active
   const isActive = (item: NavItem) => {
     if (item.matchPrefix) {
@@ -156,21 +143,6 @@ export function Sidebar({
     return location.pathname === item.href;
   };
 
-  const navGroups = [
-    { key: "create", label: "Create", items: createItems },
-    { key: "manage", label: "Manage", items: manageItems },
-    { key: "tools", label: "Tools", items: toolsItems },
-  ];
-
-  const bottomNavItems = [
-    {
-      titleKey: "nav.settings",
-      href: "/settings",
-      icon: Settings,
-    },
-  ];
-
-  // Sliding active-indicator for main nav
   const navRef = useRef<HTMLElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState<React.CSSProperties>({
     opacity: 0,
@@ -431,4 +403,4 @@ export function Sidebar({
       </div>
     </div>
   );
-}
+});

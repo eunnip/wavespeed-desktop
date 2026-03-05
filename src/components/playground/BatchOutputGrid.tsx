@@ -43,12 +43,12 @@ const mobileDownload = async (
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     // Dynamic imports for Capacitor modules (vite-ignore to prevent desktop build errors)
-    // @ts-ignore
     const { CapacitorHttp } = await import(
+      // @ts-expect-error -- Capacitor only available in mobile builds
       /* @vite-ignore */ "@capacitor/core"
     );
-    // @ts-ignore
     const { Filesystem, Directory } = await import(
+      // @ts-expect-error -- Capacitor only available in mobile builds
       /* @vite-ignore */ "@capacitor/filesystem"
     );
 

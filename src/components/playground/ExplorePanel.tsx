@@ -351,7 +351,7 @@ export function ExplorePanel({
     <div className="flex flex-col h-full overflow-hidden">
       {/* Search bar with controls */}
       {externalSearch == null && (
-        <div className="px-4 pt-3 pb-2 shrink-0">
+        <div className="px-4 pt-3 pb-2 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60 pointer-events-none" />

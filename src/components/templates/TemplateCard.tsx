@@ -36,6 +36,7 @@ interface TemplateCardProps {
   onDelete?: (template: Template) => void;
   onExport?: (template: Template) => void;
   onToggleFavorite: (template: Template) => void;
+  compact?: boolean;
 }
 
 export function TemplateCard({
@@ -45,6 +46,7 @@ export function TemplateCard({
   onDelete,
   onExport,
   onToggleFavorite,
+  compact: _compact,
 }: TemplateCardProps) {
   const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);

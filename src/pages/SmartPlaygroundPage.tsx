@@ -532,7 +532,7 @@ export function SmartPlaygroundPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 border-b px-4 py-3">
+      <div className="shrink-0 border-b px-4 py-3 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -652,7 +652,10 @@ export function SmartPlaygroundPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0 flex">
+      <div
+        className="flex-1 min-h-0 flex animate-in fade-in duration-300 fill-mode-both"
+        style={{ animationDelay: "80ms" }}
+      >
         {/* Left Panel: Form (desktop always visible, mobile conditional) */}
         <div
           className={cn(

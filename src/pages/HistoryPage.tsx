@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "@/api/client";
 import { useApiKeyStore } from "@/stores/apiKeyStore";
+import { usePageActive } from "@/hooks/usePageActive";
 import type { HistoryItem } from "@/types/prediction";
 import { OutputDisplay } from "@/components/playground/OutputDisplay";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,7 @@ function VideoPreview({ src, enabled }: { src: string; enabled: boolean }) {
 
 export function HistoryPage() {
   const { t } = useTranslation();
+  const isActive = usePageActive("/history");
   const {
     isLoading: isLoadingApiKey,
     isValidated,
@@ -167,7 +169,7 @@ export function HistoryPage() {
 
   // Keyboard navigation for detail dialog
   useEffect(() => {
-    if (!selectedItem) return;
+    if (!selectedItem || !isActive) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -179,7 +181,7 @@ export function HistoryPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [selectedItem, navigateHistory]);
+  }, [isActive, selectedItem, navigateHistory]);
 
   const fetchHistory = useCallback(async () => {
     if (!isValidated) return;
@@ -307,7 +309,12 @@ export function HistoryPage() {
     loadApiKey();
   }, [loadApiKey]);
 
+  // Only fetch when deps change; skip if data is fresh (< 30s old)
+  const lastFetchTimeRef = useRef(0);
   useEffect(() => {
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < 30_000 && items.length > 0) return;
+    lastFetchTimeRef.current = now;
     fetchHistory();
   }, [fetchHistory]);
 
@@ -385,7 +392,13 @@ export function HistoryPage() {
     }
   };
 
-  const HistoryCard = ({ item }: { item: HistoryItem }) => {
+  const HistoryCard = ({
+    item,
+    index,
+  }: {
+    item: HistoryItem;
+    index: number;
+  }) => {
     const { ref, isInView } = useInView<HTMLDivElement>();
     const PreviewIcon = getPreviewIcon(item);
     const hasPreview = item.outputs && item.outputs.length > 0;
@@ -396,9 +409,10 @@ export function HistoryPage() {
       <Card
         key={item.id}
         className={cn(
-          "overflow-hidden cursor-pointer rounded-xl border border-border/70 bg-card/80 shadow-sm hover:shadow-md transition-all",
+          "overflow-hidden cursor-pointer rounded-xl border border-border/70 bg-card/80 shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2 fill-mode-both",
           selectedIds.has(item.id) && "ring-2 ring-primary",
         )}
+        style={{ animationDelay: `${Math.min(index, 19) * 30}ms` }}
         onClick={() =>
           isSelectionMode ? handleToggleSelect(item.id) : setSelectedItem(item)
         }
@@ -507,7 +521,7 @@ export function HistoryPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="page-header px-4 md:px-6 py-4 pt-14 md:pt-4">
+      <div className="page-header px-4 md:px-6 py-4 pt-14 md:pt-4 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <div className="flex flex-col gap-1.5 md:flex-row md:items-baseline md:gap-3">
             <h1 className="text-xl md:text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -665,8 +679,8 @@ export function HistoryPage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {items.map((item) => (
-                <HistoryCard key={item.id} item={item} />
+              {items.map((item, index) => (
+                <HistoryCard key={item.id} item={item} index={index} />
               ))}
             </div>
           )}

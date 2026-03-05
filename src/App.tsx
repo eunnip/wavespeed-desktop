@@ -2,14 +2,12 @@ import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { WelcomePage } from "@/pages/WelcomePage";
-import { PlaygroundPage } from "@/pages/PlaygroundPage";
 import { ModelsPage } from "@/pages/ModelsPage";
 import { TemplatesPage } from "@/pages/TemplatesPage";
 // HistoryPage and AssetsPage are rendered persistently in Layout
 import { SettingsPage } from "@/pages/SettingsPage";
 import { SmartPlaygroundPage } from "@/pages/SmartPlaygroundPage";
 import { FreeToolsPage } from "@/pages/FreeToolsPage";
-import { ZImagePage } from "@/pages/ZImagePage";
 import { useApiKeyStore } from "@/stores/apiKeyStore";
 import { useModelsStore } from "@/stores/modelsStore";
 import { useThemeStore } from "@/stores/themeStore";
@@ -66,12 +64,12 @@ function App() {
           element={<SmartPlaygroundPage />}
         />
         <Route path="models" element={<ModelsPage />} />
-        <Route path="playground" element={<PlaygroundPage />} />
-        <Route path="playground/*" element={<PlaygroundPage />} />
+        <Route path="playground" element={<PersistentPagePlaceholder />} />
+        <Route path="playground/*" element={<PersistentPagePlaceholder />} />
         <Route path="templates" element={<TemplatesPage />} />
         <Route path="history" element={<PersistentPagePlaceholder />} />
         <Route path="assets" element={<PersistentPagePlaceholder />} />
-        <Route path="z-image" element={<ZImagePage />} />
+        <Route path="z-image" element={<PersistentPagePlaceholder />} />
         <Route path="free-tools" element={<FreeToolsPage />} />
         {/* Workflow page - persistent rendered */}
         <Route path="workflow" element={<PersistentPagePlaceholder />} />

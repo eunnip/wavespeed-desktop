@@ -15,6 +15,7 @@ import {
 import ReactDOM from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { usePageActive } from "@/hooks/usePageActive";
 import { WorkflowCanvas } from "./components/canvas/WorkflowCanvas";
 import { NodePalette } from "./components/canvas/NodePalette";
 import { WorkflowList } from "./components/WorkflowList";
@@ -188,6 +189,7 @@ const _initialSession = hydrateSessionSync();
 
 export function WorkflowPage() {
   const { t } = useTranslation();
+  const isActive = usePageActive("/workflow");
   const [searchParams, setSearchParams] = useSearchParams();
   const [nodeDefs, setNodeDefs] = useState<NodeTypeDefinition[]>([]);
   const workflowName = useWorkflowStore((s) => s.workflowName);
@@ -281,7 +283,7 @@ export function WorkflowPage() {
   const canNavigatePreview = previewIsImage && previewItems.length > 1;
 
   useEffect(() => {
-    if (!previewSrc) return;
+    if (!previewSrc || !isActive) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -299,7 +301,14 @@ export function WorkflowPage() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [previewSrc, canNavigatePreview, prevPreview, nextPreview, closePreview]);
+  }, [
+    isActive,
+    previewSrc,
+    canNavigatePreview,
+    prevPreview,
+    nextPreview,
+    closePreview,
+  ]);
 
   // Unified save handler with visual feedback
   const handleSave = useCallback(async () => {
@@ -1061,6 +1070,7 @@ export function WorkflowPage() {
 
   // Global Ctrl+S handler (works even when focus is in input/textarea)
   useEffect(() => {
+    if (!isActive) return;
     const onKeyDown = (e: KeyboardEvent) => {
       const ctrlOrCmd =
         navigator.platform.toUpperCase().indexOf("MAC") >= 0
@@ -1073,10 +1083,12 @@ export function WorkflowPage() {
     };
     window.addEventListener("keydown", onKeyDown, true); // capture phase
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [handleSave]);
+  }, [isActive, handleSave]);
 
   // Global Ctrl/Cmd+W handler — close active tab
+  // Global Ctrl/Cmd+W handler — close active tab
   useEffect(() => {
+    if (!isActive) return;
     const onKeyDown = (e: KeyboardEvent) => {
       const ctrlOrCmd =
         navigator.platform.toUpperCase().indexOf("MAC") >= 0
@@ -1094,7 +1106,7 @@ export function WorkflowPage() {
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [tabs, activeTabId, doCloseTab]);
+  }, [isActive, tabs, activeTabId, doCloseTab]);
 
   // Init
   useEffect(() => {
@@ -1453,7 +1465,10 @@ export function WorkflowPage() {
       )}
 
       {/* ── Toolbar — unified header ──────────────────────────── */}
-      <div className="relative" style={{ zIndex: 2 }}>
+      <div
+        className="relative animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-both"
+        style={{ zIndex: 2 }}
+      >
         {/* Page title block — matches other pages' title style, extends below tab bar with diagonal */}
         <div
           className="absolute left-0 top-0 z-[2] flex items-center bg-background"
