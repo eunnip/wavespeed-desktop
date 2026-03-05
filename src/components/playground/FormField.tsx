@@ -22,6 +22,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  TouchTooltip,
 } from "@/components/ui/tooltip";
 import { Dices, Info, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -611,9 +612,9 @@ export function FormField({
             field.description &&
             field.type !== "text" &&
             field.type !== "textarea" && (
-              <Tooltip delayDuration={0}>
+              <TouchTooltip>
                 <TooltipTrigger asChild>
-                  <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 translate-y-px" />
+                  <Info className="h-3.5 w-3.5 text-muted-foreground shrink-0 translate-y-px cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[280px]">
                   <p className="text-xs">
@@ -623,7 +624,7 @@ export function FormField({
                       : ""}
                   </p>
                 </TooltipContent>
-              </Tooltip>
+              </TouchTooltip>
             )}
           {isOptimizablePrompt && (
             <PromptOptimizer

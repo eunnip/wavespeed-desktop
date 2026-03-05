@@ -27,9 +27,10 @@ import {
   RotateCcw,
   Loader2,
   Save,
-  Globe,
   Settings2,
   Image,
+  Compass,
+  FolderOpen,
 } from "lucide-react";
 import { ModelSelector } from "@/components/playground/ModelSelector";
 import { cn } from "@/lib/utils";
@@ -279,13 +280,6 @@ export function MobilePlaygroundPage() {
     resetForm();
   };
 
-  const handleViewWebPage = () => {
-    if (activeTab?.selectedModel) {
-      const webUrl = `https://wavespeed.ai/models/${activeTab.selectedModel.model_id}`;
-      window.open(webUrl, "_blank");
-    }
-  };
-
   // Auto-switch to output only when NEW outputs appear (after running prediction)
   useEffect(() => {
     const currentLength = activeTab?.outputs?.length ?? 0;
@@ -413,6 +407,21 @@ export function MobilePlaygroundPage() {
             <Loader2 className="h-3 w-3 animate-spin inline-block ml-1.5" />
           )}
         </button>
+        {/* Quick access - align with desktop */}
+        <div className="flex items-center gap-1 px-2 shrink-0">
+          <button
+            onClick={() => navigate("/models")}
+            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
+          >
+            <Compass className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => navigate("/templates")}
+            className="h-7 w-7 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
+          >
+            <FolderOpen className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Content Area */}
@@ -422,30 +431,17 @@ export function MobilePlaygroundPage() {
             /* Input View */
             <div className="flex-1 flex flex-col overflow-hidden">
               {/* Model Selector */}
-              <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <ModelSelector
-                    models={models}
-                    value={activeTab?.selectedModel?.model_id}
-                    onChange={(newModelId) =>
-                      navigate(
-                        `/playground/${encodeURIComponent(newModelId)}`,
-                        { replace: true },
-                      )
-                    }
-                    disabled={activeTab?.isRunning}
-                  />
-                </div>
-                {activeTab?.selectedModel && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="shrink-0"
-                    onClick={handleViewWebPage}
-                  >
-                    <Globe className="h-4 w-4" />
-                  </Button>
-                )}
+              <div className="px-4 pt-3 pb-2">
+                <ModelSelector
+                  models={models}
+                  value={activeTab?.selectedModel?.model_id}
+                  onChange={(newModelId) =>
+                    navigate(`/playground/${encodeURIComponent(newModelId)}`, {
+                      replace: true,
+                    })
+                  }
+                  disabled={activeTab?.isRunning}
+                />
               </div>
 
               {/* Parameters Form */}

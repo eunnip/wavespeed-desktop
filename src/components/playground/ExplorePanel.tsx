@@ -12,6 +12,11 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
+  TouchTooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -27,6 +32,7 @@ import {
   ArrowDownNarrowWide,
   ArrowUpNarrowWide,
   ChevronDown,
+  ChevronUp,
   RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -69,6 +75,8 @@ function getBarColor(type: string): string {
 interface ExplorePanelProps {
   onSelectModel: (modelId: string) => void;
   externalSearch?: string;
+  /** Collapsible type filters for mobile */
+  mobile?: boolean;
 }
 
 /** Memoized model card */
@@ -78,6 +86,7 @@ const ModelCard = memo(function ModelCard({
   onSelect,
   onToggleFav,
   onNewTab,
+  mobile,
 }: {
   model: {
     model_id: string;
@@ -86,12 +95,14 @@ const ModelCard = memo(function ModelCard({
     base_price?: number;
     description?: string;
   };
+  mobile?: boolean;
   isFav: boolean;
   onSelect: (id: string) => void;
   onToggleFav: (e: React.MouseEvent, id: string) => void;
   onNewTab: (e: React.MouseEvent, id: string) => void;
 }) {
   const { t } = useTranslation();
+
   return (
     <div
       onClick={() => onSelect(model.model_id)}
@@ -121,51 +132,89 @@ const ModelCard = memo(function ModelCard({
             </span>
           )}
           <div className="flex gap-0.5 ml-auto">
-            <HoverCard openDelay={200} closeDelay={100}>
-              <HoverCardTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 w-6 p-0"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Info className="h-3 w-3" />
-                </Button>
-              </HoverCardTrigger>
-              <HoverCardContent className="w-64" side="top" align="end">
-                <div className="space-y-1.5">
-                  <h4 className="font-semibold text-sm">{model.name}</h4>
-                  <p className="text-xs text-muted-foreground font-mono break-all">
-                    {model.model_id}
-                  </p>
-                  {model.description && (
-                    <p className="text-xs text-muted-foreground">
-                      {model.description}
+            {mobile ? (
+              <TouchTooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Info className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-[260px]">
+                  <div className="space-y-1">
+                    <p className="font-semibold text-xs">{model.name}</p>
+                    <p className="text-[10px] opacity-80 font-mono break-all">
+                      {model.model_id}
                     </p>
-                  )}
-                  {model.type && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-muted-foreground">
-                        {t("models.type")}:
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {model.type}
-                      </Badge>
-                    </div>
-                  )}
-                  {model.base_price !== undefined && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-muted-foreground">
-                        {t("models.basePrice")}:
-                      </span>
-                      <span className="font-medium text-primary">
-                        ${model.base_price.toFixed(4)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </HoverCardContent>
-            </HoverCard>
+                    {model.description && (
+                      <p className="text-[10px] opacity-80">
+                        {model.description}
+                      </p>
+                    )}
+                    {model.type && (
+                      <p className="text-[10px] opacity-80">
+                        {t("models.type")}: {model.type}
+                      </p>
+                    )}
+                    {model.base_price !== undefined && (
+                      <p className="text-[10px] opacity-80">
+                        {t("models.basePrice")}: ${model.base_price.toFixed(4)}
+                      </p>
+                    )}
+                  </div>
+                </TooltipContent>
+              </TouchTooltip>
+            ) : (
+              <HoverCard openDelay={200} closeDelay={100}>
+                <HoverCardTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Info className="h-3 w-3" />
+                  </Button>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-64" side="top" align="end">
+                  <div className="space-y-1.5">
+                    <h4 className="font-semibold text-sm">{model.name}</h4>
+                    <p className="text-xs text-muted-foreground font-mono break-all">
+                      {model.model_id}
+                    </p>
+                    {model.description && (
+                      <p className="text-xs text-muted-foreground">
+                        {model.description}
+                      </p>
+                    )}
+                    {model.type && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">
+                          {t("models.type")}:
+                        </span>
+                        <Badge variant="secondary" className="text-xs">
+                          {model.type}
+                        </Badge>
+                      </div>
+                    )}
+                    {model.base_price !== undefined && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">
+                          {t("models.basePrice")}:
+                        </span>
+                        <span className="font-medium text-primary">
+                          ${model.base_price.toFixed(4)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            )}
             <Button
               size="sm"
               variant="ghost"
@@ -208,6 +257,7 @@ const ModelCard = memo(function ModelCard({
 export function ExplorePanel({
   onSelectModel,
   externalSearch,
+  mobile,
 }: ExplorePanelProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -218,6 +268,7 @@ export function ExplorePanel({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("popularity");
   const [sortAsc, setSortAsc] = useState(false);
+  const [typeFiltersExpanded, setTypeFiltersExpanded] = useState(false);
 
   // Local search state with debounce
   const [searchInput, setSearchInput] = useState("");
@@ -465,7 +516,12 @@ export function ExplorePanel({
                   })
                 : t("playground.explore.allModels", "All Models")}
           </h3>
-          <div className="flex gap-1.5 flex-wrap mb-3">
+          <div
+            className={cn(
+              "flex gap-1.5 flex-wrap mb-3 relative",
+              mobile && !typeFiltersExpanded && "max-h-[30px] overflow-hidden",
+            )}
+          >
             <button
               onClick={() => setTypeFilter(null)}
               className={cn(
@@ -492,6 +548,24 @@ export function ExplorePanel({
               </button>
             ))}
           </div>
+          {mobile && allTypes.length > 5 && (
+            <button
+              onClick={() => setTypeFiltersExpanded(!typeFiltersExpanded)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-3 -mt-1"
+            >
+              {typeFiltersExpanded ? (
+                <>
+                  <ChevronUp className="h-3 w-3" />
+                  {t("common.showLess", "Show less")}
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3 w-3" />
+                  {t("common.showMore", "Show more")}
+                </>
+              )}
+            </button>
+          )}
 
           {filteredModels.length === 0 ? (
             <div className="py-12 text-center text-sm text-muted-foreground">
@@ -538,6 +612,7 @@ export function ExplorePanel({
                         onSelect={onSelectModel}
                         onToggleFav={handleToggleFavorite}
                         onNewTab={handleOpenInNewTab}
+                        mobile={mobile}
                       />
                     ))}
                   </div>

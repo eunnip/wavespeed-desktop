@@ -1,8 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, Home, Sun, Moon } from "lucide-react";
+import { ChevronLeft, Home, Sun, Moon, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useThemeStore } from "@/stores/themeStore";
+import { usePlaygroundStore } from "@/stores/playgroundStore";
 import { AppLogo } from "@/components/layout/AppLogo";
 import { cn } from "@/lib/utils";
 
@@ -119,8 +120,22 @@ export function MobileHeader() {
           )}
         </h1>
 
-        {/* Right side - Theme toggle */}
+        {/* Right side - Globe + Theme toggle */}
         <div className="flex items-center gap-1.5 justify-end">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => {
+              const activeTab = usePlaygroundStore.getState().getActiveTab();
+              const url = activeTab?.selectedModel
+                ? `https://wavespeed.ai/models/${activeTab.selectedModel.model_id}`
+                : "https://wavespeed.ai";
+              window.open(url, "_blank");
+            }}
+          >
+            <Globe className="h-4 w-4" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
