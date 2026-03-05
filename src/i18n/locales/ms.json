@@ -36,7 +36,9 @@
     "clearAll": "Kosongkan semua",
     "deselectAll": "Nyahpilih Semua",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "Tunjuk lagi",
+    "showLess": "Tunjuk kurang"
   },
   "nav": {
     "home": "Laman Utama",

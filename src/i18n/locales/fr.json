@@ -36,7 +36,9 @@
     "settings": "Paramètres",
     "clearAll": "Tout effacer",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "Afficher plus",
+    "showLess": "Afficher moins"
   },
   "nav": {
     "home": "Accueil",

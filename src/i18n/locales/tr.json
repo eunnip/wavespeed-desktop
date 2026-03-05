@@ -36,7 +36,9 @@
     "settings": "Ayarlar",
     "clearAll": "Tümünü temizle",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "Daha fazla göster",
+    "showLess": "Daha az göster"
   },
   "nav": {
     "home": "Ana Sayfa",

@@ -36,7 +36,9 @@
     "clearAll": "全部清除",
     "deselectAll": "取消全选",
     "add": "添加",
-    "saving": "保存中..."
+    "saving": "保存中...",
+    "showMore": "展开更多",
+    "showLess": "收起"
   },
   "nav": {
     "home": "首页",

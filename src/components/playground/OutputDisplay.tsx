@@ -127,7 +127,9 @@ export function OutputDisplay({
 
   // Game state
   const [isGameStarted, setIsGameStarted] = useState(false);
-  const [showGame, setShowGame] = useState(true);
+  const [showGame, setShowGame] = useState(
+    () => outputs.length === 0 || isLoading,
+  );
   const [gameEndedWithResults, setGameEndedWithResults] = useState(false);
   const prevOutputsLengthRef = useRef(0);
 
@@ -644,10 +646,22 @@ export function OutputDisplay({
               {isAudio && <AudioPlayer src={outputStr} />}
 
               {isObject && (
-                <div className="p-4 w-full h-full overflow-auto">
-                  <pre className="text-sm font-mono whitespace-pre-wrap break-all">
-                    {outputStr}
-                  </pre>
+                <div className="flex items-center justify-center w-full h-full p-6 overflow-auto">
+                  <div className="w-full max-w-md space-y-3">
+                    {Object.entries(output as Record<string, unknown>).map(
+                      ([key, val]) =>
+                        val !== null && val !== undefined ? (
+                          <div key={key} className="space-y-0.5">
+                            <p className="text-xs text-muted-foreground">
+                              {key.replace(/_/g, " ")}
+                            </p>
+                            <p className="text-sm font-medium break-all">
+                              {String(val)}
+                            </p>
+                          </div>
+                        ) : null,
+                    )}
+                  </div>
                 </div>
               )}
 

@@ -36,7 +36,9 @@
     "clearAll": "مسح الكل",
     "deselectAll": "إلغاء تحديد الكل",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "عرض المزيد",
+    "showLess": "عرض أقل"
   },
   "nav": {
     "home": "الرئيسية",

@@ -36,7 +36,9 @@
     "clearAll": "ล้างทั้งหมด",
     "deselectAll": "ยกเลิกการเลือกทั้งหมด",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "แสดงเพิ่มเติม",
+    "showLess": "แสดงน้อยลง"
   },
   "nav": {
     "home": "หน้าแรก",

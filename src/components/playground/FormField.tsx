@@ -16,6 +16,7 @@ import {
 import { FileUpload } from "./FileUpload";
 import { SizeSelector } from "./SizeSelector";
 import { LoraSelector, type LoraItem } from "./LoraSelector";
+import { ObjectArrayField } from "./ObjectArrayField";
 import { PromptOptimizer } from "./PromptOptimizer";
 import { Button } from "@/components/ui/button";
 import {
@@ -397,6 +398,58 @@ export function FormField({
           />
         );
 
+      case "multi-select": {
+        // Value is stored as plain string[] internally; wrapKey wrapping happens at submission time
+        const selected = Array.isArray(value) ? (value as string[]) : [];
+        const options = field.options ?? [];
+        return (
+          <div className="flex flex-wrap gap-1.5">
+            {options.map((opt) => {
+              const optStr = String(opt);
+              const isActive = selected.includes(optStr);
+              return (
+                <button
+                  key={optStr}
+                  type="button"
+                  disabled={
+                    disabled ||
+                    (!isActive &&
+                      field.max !== undefined &&
+                      selected.length >= field.max)
+                  }
+                  onClick={() => {
+                    const next = isActive
+                      ? selected.filter((v) => v !== optStr)
+                      : [...selected, optStr];
+                    onChange(next);
+                  }}
+                  className={cn(
+                    "px-2.5 py-1 text-xs rounded-md border transition-colors",
+                    isActive
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-muted/50 text-muted-foreground border-border hover:bg-muted",
+                    disabled && "opacity-50 cursor-not-allowed",
+                  )}
+                >
+                  {optStr}
+                </button>
+              );
+            })}
+          </div>
+        );
+      }
+
+      case "object-array":
+        return (
+          <ObjectArrayField
+            itemFields={field.itemFields || []}
+            value={(value as Record<string, unknown>[]) || []}
+            onChange={(v) => onChange(v)}
+            maxItems={field.max}
+            disabled={disabled}
+          />
+        );
+
       case "loras":
         return (
           <LoraSelector
@@ -443,128 +496,6 @@ export function FormField({
               disabled={
                 disabled ||
                 (field.maxFiles ? items.length >= field.maxFiles : false)
-              }
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              {t("common.addItem", "Add Item")}
-            </Button>
-          </div>
-        );
-      }
-
-      case "object-array": {
-        const objItems = Array.isArray(value)
-          ? (value as Record<string, unknown>[])
-          : [];
-        const props = field.itemProperties || {};
-        const propKeys = Object.keys(props);
-        return (
-          <div className="space-y-3">
-            {objItems.map((item, i) => (
-              <div
-                key={i}
-                className="relative rounded-lg border border-border/70 p-3 space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    #{i + 1}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                    onClick={() =>
-                      onChange(objItems.filter((_, idx) => idx !== i))
-                    }
-                    disabled={disabled}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-                {propKeys.map((key) => {
-                  const propSchema = props[key];
-                  const propType = propSchema.type;
-                  const propValue = item[key] ?? propSchema.default ?? "";
-                  const updateItem = (v: unknown) => {
-                    const next = [...objItems];
-                    next[i] = { ...next[i], [key]: v };
-                    onChange(next);
-                  };
-                  return (
-                    <div key={key} className="space-y-1">
-                      <Label className="text-xs">
-                        {propSchema.title || key}
-                      </Label>
-                      {propType === "boolean" ? (
-                        <Switch
-                          checked={Boolean(propValue)}
-                          onCheckedChange={updateItem}
-                          disabled={disabled}
-                        />
-                      ) : propType === "number" || propType === "integer" ? (
-                        <Input
-                          type="number"
-                          value={propValue as string | number}
-                          onChange={(e) =>
-                            updateItem(
-                              e.target.value === ""
-                                ? ""
-                                : Number(e.target.value),
-                            )
-                          }
-                          min={propSchema.minimum}
-                          max={propSchema.maximum}
-                          disabled={disabled}
-                        />
-                      ) : propSchema.enum ? (
-                        <Select
-                          value={String(propValue)}
-                          onValueChange={updateItem}
-                          disabled={disabled}
-                        >
-                          <SelectTrigger className="h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {propSchema.enum.map((opt) => (
-                              <SelectItem key={String(opt)} value={String(opt)}>
-                                {String(opt)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <Input
-                          value={String(propValue)}
-                          onChange={(e) => updateItem(e.target.value)}
-                          disabled={disabled}
-                        />
-                      )}
-                      {propSchema.description && (
-                        <p className="text-[10px] text-muted-foreground">
-                          {propSchema.description}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const empty: Record<string, unknown> = {};
-                for (const key of propKeys) {
-                  empty[key] = props[key].default ?? "";
-                }
-                onChange([...objItems, empty]);
-              }}
-              disabled={
-                disabled ||
-                (field.maxFiles ? objItems.length >= field.maxFiles : false)
               }
             >
               <Plus className="h-4 w-4 mr-1" />

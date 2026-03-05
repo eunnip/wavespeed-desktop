@@ -36,7 +36,9 @@
     "settings": "設定",
     "clearAll": "全部清除",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "顯示更多",
+    "showLess": "收起"
   },
   "nav": {
     "home": "首頁",

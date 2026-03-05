@@ -36,7 +36,9 @@
     "settings": "Configurações",
     "clearAll": "Limpar tudo",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "Mostrar mais",
+    "showLess": "Mostrar menos"
   },
   "nav": {
     "home": "Início",

@@ -36,7 +36,9 @@
     "settings": "Настройки",
     "clearAll": "Очистить всё",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "Показать больше",
+    "showLess": "Показать меньше"
   },
   "nav": {
     "home": "Главная",

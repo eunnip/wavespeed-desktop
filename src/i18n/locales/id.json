@@ -36,7 +36,9 @@
     "settings": "Pengaturan",
     "clearAll": "Hapus semua",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "Tampilkan lebih",
+    "showLess": "Tampilkan sedikit"
   },
   "nav": {
     "home": "Beranda",

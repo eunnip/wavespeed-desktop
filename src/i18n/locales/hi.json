@@ -36,7 +36,9 @@
     "settings": "सेटिंग्स",
     "clearAll": "सभी साफ़ करें",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "और दिखाएं",
+    "showLess": "कम दिखाएं"
   },
   "nav": {
     "home": "होम",

@@ -9,10 +9,11 @@ export interface FormFieldConfig {
     | "slider"
     | "boolean"
     | "select"
+    | "multi-select"
+    | "object-array"
+    | "string-array"
     | "file"
     | "file-array"
-    | "string-array"
-    | "object-array"
     | "size"
     | "loras";
   label: string;
@@ -28,9 +29,10 @@ export interface FormFieldConfig {
   placeholder?: string;
   hidden?: boolean; // x-hidden fields are optional and hidden by default
   schemaType?: string; // Original schema type (e.g. 'integer' vs 'number')
-  /** For object-array: schema of each item's properties */
-  itemProperties?: Record<string, SchemaProperty>;
-  itemRequired?: string[];
+  /** For multi-select: wrap each selected value in an object with this key */
+  wrapKey?: string;
+  /** For object-array: sub-field definitions for each item in the array */
+  itemFields?: FormFieldConfig[];
 }
 
 export function validateFormValues(
@@ -186,18 +188,23 @@ function propertyToField(
     hidden: !!prop["x-hidden"],
   };
 
-  // Handle x-ui-component: uploader (for zip files etc.)
-  if (prop["x-ui-component"] === "uploader") {
+  // Handle x-ui-component: uploader (single file) / uploaders (multi-file)
+  if (
+    prop["x-ui-component"] === "uploader" ||
+    prop["x-ui-component"] === "uploaders"
+  ) {
+    const isMulti = prop["x-ui-component"] === "uploaders";
     // If no x-accept, try to infer from field name
     let fileAccept = prop["x-accept"];
     if (!fileAccept) {
       const inferred = detectFileType(name);
-      fileAccept = inferred?.accept || "*/*";
+      fileAccept = inferred?.accept || "image/*";
     }
     return {
       ...baseField,
-      type: "file",
+      type: isMulti ? "file-array" : "file",
       accept: fileAccept,
+      maxFiles: isMulti ? prop.maxItems || 10 : 1,
       placeholder: prop["x-placeholder"],
     };
   }
@@ -237,6 +244,26 @@ function propertyToField(
     };
   }
 
+  // Handle x-ui-component: "array" — dynamic list of structured objects
+  if (
+    prop.type === "array" &&
+    prop["x-ui-component"] === "array" &&
+    prop.items?.type === "object" &&
+    prop.items.properties
+  ) {
+    const itemProps = prop.items.properties as Record<string, SchemaProperty>;
+    const orderProps = (prop.items["x-order-properties"] as string[]) || [];
+    const subFields = schemaToFormFields(itemProps, [], orderProps);
+    if (subFields.length > 0) {
+      return {
+        ...baseField,
+        type: "object-array",
+        itemFields: subFields,
+        max: prop.maxItems,
+      };
+    }
+  }
+
   // Handle array type (could be file array)
   if (prop.type === "array") {
     const lowerName = name.toLowerCase();
@@ -256,14 +283,40 @@ function propertyToField(
         maxFiles: prop.maxItems || 10,
       };
     }
-    // Array of objects with properties
-    if (prop.items?.type === "object" && prop.items.properties) {
+    // Handle array of objects with a single enum property (e.g. tag_list: [{tag_id: "o_101"}])
+    if (prop.items && prop.items.type === "object" && prop.items.properties) {
+      const itemProps = prop.items.properties as Record<string, SchemaProperty>;
+      const keys = Object.keys(itemProps);
+      if (keys.length === 1) {
+        const innerProp = itemProps[keys[0]];
+        const enumValues = innerProp["x-enum"] || innerProp.enum;
+        if (enumValues && enumValues.length > 0) {
+          return {
+            ...baseField,
+            type: "multi-select",
+            options: enumValues,
+            wrapKey: keys[0],
+            max: prop.maxItems,
+          };
+        }
+      }
+    }
+    // Fallback: arrays of strings with enum → multi-select
+    if (prop.items?.enum && prop.items.enum.length > 0) {
       return {
         ...baseField,
-        type: "object-array",
-        maxFiles: prop.maxItems || 10,
-        itemProperties: prop.items.properties,
-        itemRequired: prop.items.required,
+        type: "multi-select",
+        options: prop.items.enum,
+        max: prop.maxItems,
+      };
+    }
+    // Fallback: arrays of strings with x-enum → multi-select
+    if (prop.items?.["x-enum"] && prop.items["x-enum"].length > 0) {
+      return {
+        ...baseField,
+        type: "multi-select",
+        options: prop.items["x-enum"],
+        max: prop.maxItems,
       };
     }
     // Array of strings (generic)
@@ -516,6 +569,16 @@ export function normalizePayloadArrays(
   formFields: FormFieldConfig[],
 ): Record<string, unknown> {
   const out = { ...payload };
+
+  // Handle multi-select wrapKey: transform ["a","b"] → [{key: "a"}, {key: "b"}]
+  for (const f of formFields) {
+    if (f.type === "multi-select" && f.wrapKey && Array.isArray(out[f.name])) {
+      out[f.name] = (out[f.name] as string[]).map((v) => ({
+        [f.wrapKey!]: v,
+      }));
+    }
+  }
+
   const arrayFieldNames = new Set<string>(
     formFields
       .filter(

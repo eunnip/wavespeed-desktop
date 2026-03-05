@@ -36,7 +36,9 @@
     "clearAll": "Xóa tất cả",
     "deselectAll": "Bỏ chọn tất cả",
     "add": "Add",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "showMore": "Xem thêm",
+    "showLess": "Thu gọn"
   },
   "nav": {
     "home": "Trang chủ",
