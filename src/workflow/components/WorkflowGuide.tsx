@@ -65,6 +65,7 @@ interface GuideStepDef {
 function buildSteps(actions: {
   openNodePalette: () => void;
   closeNodePalette: () => void;
+  scrollNodeIntoView: (selector: string) => void;
 }): GuideStepDef[] {
   return [
     {
@@ -86,9 +87,22 @@ function buildSteps(actions: {
     },
     {
       key: "aiTask",
-      target: '[data-guide="node-palette"]',
+      target: '[data-guide-node="ai-task/run"]',
       side: "right",
       showAIFeatures: true,
+      prepare: () => {
+        actions.openNodePalette();
+        actions.scrollNodeIntoView('[data-guide-node="ai-task/run"]');
+      },
+    },
+    {
+      key: "concat",
+      target: '[data-guide-node="processing/concat"]',
+      side: "right",
+      prepare: () => {
+        actions.openNodePalette();
+        actions.scrollNodeIntoView('[data-guide-node="processing/concat"]');
+      },
     },
     {
       key: "canvas",
@@ -100,16 +114,19 @@ function buildSteps(actions: {
       key: "canvasTools",
       target: '[data-guide="canvas-tools"]',
       side: "left",
+      prepare: actions.closeNodePalette,
     },
     {
       key: "run",
       target: '[data-guide="run-controls"]',
       side: "bottom",
+      prepare: actions.closeNodePalette,
     },
     {
       key: "moreMenu",
       target: '[data-guide="toolbar-more"]',
       side: "right",
+      prepare: actions.closeNodePalette,
     },
   ];
 }
@@ -300,6 +317,15 @@ export function WorkflowGuide({
             '[data-guide="node-palette-btn"]',
           ) as HTMLElement | null;
           if (palette && btn) btn.click();
+        },
+        scrollNodeIntoView: (selector: string) => {
+          // Wait a tick for palette to render, then scroll the target into view
+          requestAnimationFrame(() => {
+            const el = document.querySelector(selector);
+            if (el) {
+              el.scrollIntoView({ block: "center", behavior: "smooth" });
+            }
+          });
         },
       }),
     [],

@@ -1520,19 +1520,27 @@ export function WorkflowPage() {
         >
           {/* Tab list dropdown button */}
           <div ref={wfTabListRef} className="relative shrink-0">
-            <button
-              onClick={() => setWfTabListOpen(!wfTabListOpen)}
-              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors shrink-0 ${
-                wfTabListOpen
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`}
-              title={t("workflow.allTabs", "All Tabs")}
-            >
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${wfTabListOpen ? "rotate-180" : ""}`}
-              />
-            </button>
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setWfTabListOpen(!wfTabListOpen)}
+                  className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors shrink-0 ${
+                    wfTabListOpen
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${wfTabListOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+              </TooltipTrigger>
+              {!wfTabListOpen && (
+                <TooltipContent side="bottom">
+                  {t("workflow.allTabs", "All Tabs")}
+                </TooltipContent>
+              )}
+            </Tooltip>
             {wfTabListOpen && (
               <div className="absolute z-50 mt-1 left-0 min-w-[320px] max-h-[400px] overflow-y-auto rounded-xl border border-border/80 bg-popover shadow-xl animate-in fade-in-0 zoom-in-95">
                 <div className="p-1.5">
@@ -1708,38 +1716,50 @@ export function WorkflowPage() {
               })}
               {/* + button inside scroll area: visible when tabs don't overflow */}
               {!wfTabsOverflow && (
-                <button
-                  onClick={addTab}
-                  className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 mx-1"
-                  title={t("workflow.newTab", "New tab")}
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={addTab}
+                      className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 mx-1"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {t("workflow.newTab", "New tab")}
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
           </div>
           {/* + button fixed outside: visible only when tabs overflow */}
           {wfTabsOverflow && (
-            <button
-              onClick={addTab}
-              className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
-              title={t("workflow.newTab", "New tab")}
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={addTab}
+                  className="flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {t("workflow.newTab", "New tab")}
+              </TooltipContent>
+            </Tooltip>
           )}
 
-          <div className="w-px h-5 bg-border mx-1" />
+          <div className="w-px h-5 bg-border mx-2" />
 
           {/* Last saved indicator */}
           {lastSavedAt && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-[10px] text-muted-foreground mr-2">
               {t("workflow.savedAt", "Saved")}{" "}
               {lastSavedAt.toLocaleTimeString()}
             </span>
           )}
           {isDirty && workflowId && (
-            <span className="text-[10px] text-orange-400">
+            <span className="text-[10px] text-orange-400 mr-2">
               {t("workflow.unsaved", "unsaved")}
             </span>
           )}

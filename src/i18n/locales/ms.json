@@ -1163,6 +1163,7 @@
     "nodeDefs": {
       "ai-task/run": {
         "label": "WaveSpeed API",
+        "hint": "Jalankan mana-mana model AI — imej, video, audio dan lain-lain",
         "emptyHint": "Klik nod ini, kemudian pilih model →",
         "params": {
           "modelId": {
@@ -1172,6 +1173,7 @@
       },
       "input/media-upload": {
         "label": "Muat naik",
+        "hint": "Muat naik fail imej, video atau audio sebagai input saluran paip",
         "inputs": {
           "media": {
             "label": "Media"
@@ -1185,6 +1187,7 @@
       },
       "input/text-input": {
         "label": "Teks",
+        "hint": "Masukkan teks atau prompt untuk dihantar ke nod seterusnya",
         "params": {
           "text": {
             "label": "Teks"
@@ -1193,6 +1196,7 @@
       },
       "output/preview": {
         "label": "Pratonton",
+        "hint": "Pratonton hasil terus di kanvas",
         "inputs": {
           "input": {
             "label": "URL"
@@ -1216,6 +1220,7 @@
       },
       "output/file": {
         "label": "Eksport fail",
+        "hint": "Simpan hasil ke fail tempatan",
         "inputs": {
           "url": {
             "label": "URL"
@@ -1243,25 +1248,32 @@
         }
       },
       "free-tool/image-enhancer": {
-        "label": "Penambah imej"
+        "label": "Penambah imej",
+        "hint": "Besarkan dan pertajam imej (2×–4×) secara percuma"
       },
       "free-tool/background-remover": {
-        "label": "Pembuang latar belakang"
+        "label": "Pembuang latar belakang",
+        "hint": "Buang latar belakang imej secara automatik dan percuma"
       },
       "free-tool/face-enhancer": {
-        "label": "Penambah muka"
+        "label": "Penambah muka",
+        "hint": "Tingkatkan dan pulihkan muka dalam foto secara percuma"
       },
       "free-tool/video-enhancer": {
-        "label": "Penambah video"
+        "label": "Penambah video",
+        "hint": "Besarkan dan tingkatkan kualiti video secara percuma"
       },
       "free-tool/face-swapper": {
-        "label": "Penukar muka"
+        "label": "Penukar muka",
+        "hint": "Tukar muka dari satu imej ke imej lain secara percuma"
       },
       "free-tool/image-eraser": {
-        "label": "Pemadam imej"
+        "label": "Pemadam imej",
+        "hint": "Padam objek dari imej menggunakan topeng secara percuma"
       },
       "free-tool/segment-anything": {
         "label": "Segmen apa-apa",
+        "hint": "Jana topeng untuk mana-mana objek dalam imej secara percuma",
         "params": {
           "pointX": {
             "label": "Titik X",
@@ -1277,19 +1289,32 @@
         }
       },
       "free-tool/video-converter": {
-        "label": "Penukar video"
+        "label": "Penukar video",
+        "hint": "Tukar format, codec atau resolusi video secara percuma"
       },
       "free-tool/audio-converter": {
-        "label": "Penukar audio"
+        "label": "Penukar audio",
+        "hint": "Tukar audio antara MP3, WAV, FLAC dan lain-lain secara percuma"
       },
       "free-tool/image-converter": {
-        "label": "Penukar imej"
+        "label": "Penukar imej",
+        "hint": "Tukar imej antara PNG, JPG, WebP dan lain-lain secara percuma"
       },
       "free-tool/media-trimmer": {
-        "label": "Pemangkas media"
+        "label": "Pemangkas media",
+        "hint": "Pangkas video atau audio ke julat masa tertentu secara percuma"
       },
       "free-tool/media-merger": {
-        "label": "Penggabung media"
+        "label": "Penggabung media",
+        "hint": "Gabungkan beberapa klip video atau audio menjadi satu secara percuma"
+      },
+      "processing/concat": {
+        "label": "Gabung",
+        "hint": "Gabungkan beberapa nilai tunggal menjadi satu tatasusunan (cth. imej → imej[])"
+      },
+      "processing/select": {
+        "label": "Pilih",
+        "hint": "Pilih satu item dari tatasusunan mengikut indeks"
       }
     },
     "modelSelector": {
@@ -1399,6 +1424,10 @@
           "costEstimate": "Anggaran kos masa nyata bagi setiap pelaksanaan supaya anda sentiasa tahu harga sebelum berjalan",
           "upstream": "Sambungkan output nod huluan (imej, teks) sebagai input — bina saluran AI berbilang langkah"
         }
+      },
+      "concat": {
+        "title": "Nod Concat — Gabungkan Pelbagai Output",
+        "desc": "Perlu menghantar beberapa imej ke input \"images\"? Gunakan nod Concat:\n\n1. Sambungkan output image dari setiap nod huluan ke value1, value2, value3, dll. Concat\n2. Sambungkan output Concat (kini satu tatasusunan) ke parameter images nod hiliran\n\nContoh:\n[Muat Naik A] → image → Concat → output (tatasusunan) → [Tugas AI].images\n[Muat Naik B] → image ↗\n\nIni berfungsi untuk semua jenis output — imej, video, teks — bila-bila masa anda perlu menggabungkan beberapa nilai tunggal menjadi satu input tatasusunan."
       },
       "canvas": {
         "title": "Interaksi Kanvas",

@@ -18,6 +18,11 @@ import { fuzzySearch } from "@/lib/fuzzySearch";
 import { Search, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNodeIcon } from "./custom-node/NodeIcons";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 /* ── category colour dots ─────────────────────────────────── */
 const catDot: Record<string, string> = {
@@ -244,40 +249,52 @@ export function NodePalette({ definitions }: NodePaletteProps) {
                 <div className="py-0.5">
                   {defs.map((def) => {
                     const isAiTask = def.category === "ai-task";
+                    const hint = t(`workflow.nodeDefs.${def.type}.hint`, "");
                     return (
-                      <div
-                        key={def.type}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, def.type)}
-                        onClick={() => handleClick(def)}
-                        className={cn(
-                          "flex items-center gap-2 h-8 px-2 rounded-lg cursor-grab select-none",
-                          "text-[12px] text-foreground/70 transition-colors duration-100",
-                          "hover:bg-muted hover:text-foreground",
-                          "active:cursor-grabbing active:bg-muted/80",
+                      <Tooltip key={def.type} delayDuration={0}>
+                        <TooltipTrigger asChild>
+                          <div
+                            data-guide-node={def.type}
+                            draggable
+                            onDragStart={(e) => onDragStart(e, def.type)}
+                            onClick={() => handleClick(def)}
+                            className={cn(
+                              "flex items-center gap-2 h-8 px-2 rounded-lg cursor-grab select-none",
+                              "text-[12px] text-foreground/70 transition-colors duration-100",
+                              "hover:bg-muted hover:text-foreground",
+                              "active:cursor-grabbing active:bg-muted/80",
+                            )}
+                          >
+                            {(() => {
+                              const Icon = getNodeIcon(def.type);
+                              return Icon ? (
+                                <div className="rounded-md bg-primary/10 p-1 flex-shrink-0">
+                                  <Icon className="w-3 h-3 text-primary" />
+                                </div>
+                              ) : null;
+                            })()}
+                            <span className="truncate">
+                              {t(
+                                `workflow.nodeDefs.${def.type}.label`,
+                                def.label,
+                              )}
+                            </span>
+                            {isAiTask && (
+                              <span className="ml-auto shrink-0 text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">
+                                AI
+                              </span>
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        {hint && (
+                          <TooltipContent
+                            side="right"
+                            className="max-w-[220px]"
+                          >
+                            {hint}
+                          </TooltipContent>
                         )}
-                        title={t(
-                          "workflow.dragOrClickToAdd",
-                          "Drag to canvas or click to add",
-                        )}
-                      >
-                        {(() => {
-                          const Icon = getNodeIcon(def.type);
-                          return Icon ? (
-                            <div className="rounded-md bg-primary/10 p-1 flex-shrink-0">
-                              <Icon className="w-3 h-3 text-primary" />
-                            </div>
-                          ) : null;
-                        })()}
-                        <span className="truncate">
-                          {t(`workflow.nodeDefs.${def.type}.label`, def.label)}
-                        </span>
-                        {isAiTask && (
-                          <span className="ml-auto shrink-0 text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">
-                            AI
-                          </span>
-                        )}
-                      </div>
+                      </Tooltip>
                     );
                   })}
                 </div>

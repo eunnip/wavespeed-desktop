@@ -1208,6 +1208,7 @@
     "nodeDefs": {
       "ai-task/run": {
         "label": "WaveSpeed API",
+        "hint": "运行平台上的任意 AI 模型——图像、视频、音频等",
         "emptyHint": "点击此节点，然后选择模型 →",
         "params": {
           "modelId": {
@@ -1217,6 +1218,7 @@
       },
       "input/media-upload": {
         "label": "上传",
+        "hint": "上传图片、视频或音频文件作为流水线输入",
         "inputs": {
           "media": {
             "label": "媒体"
@@ -1230,6 +1232,7 @@
       },
       "input/text-input": {
         "label": "文本",
+        "hint": "输入文本或提示词，传递给下游节点",
         "params": {
           "text": {
             "label": "文本"
@@ -1238,6 +1241,7 @@
       },
       "output/preview": {
         "label": "预览",
+        "hint": "在画布上直接预览结果",
         "inputs": {
           "input": {
             "label": "URL"
@@ -1261,6 +1265,7 @@
       },
       "output/file": {
         "label": "文件导出",
+        "hint": "将结果保存为本地文件",
         "inputs": {
           "url": {
             "label": "URL"
@@ -1288,25 +1293,32 @@
         }
       },
       "free-tool/image-enhancer": {
-        "label": "图片增强"
+        "label": "图片增强",
+        "hint": "免费放大和锐化图片（2×–4×）"
       },
       "free-tool/background-remover": {
-        "label": "背景移除"
+        "label": "背景移除",
+        "hint": "免费自动移除图片背景"
       },
       "free-tool/face-enhancer": {
-        "label": "人脸增强"
+        "label": "人脸增强",
+        "hint": "免费增强和修复照片中的人脸"
       },
       "free-tool/video-enhancer": {
-        "label": "视频增强"
+        "label": "视频增强",
+        "hint": "免费提升视频画质和分辨率"
       },
       "free-tool/face-swapper": {
-        "label": "换脸"
+        "label": "换脸",
+        "hint": "免费将一张图片的人脸替换到另一张上"
       },
       "free-tool/image-eraser": {
-        "label": "图像擦除"
+        "label": "图像擦除",
+        "hint": "免费使用蒙版擦除图片中的物体"
       },
       "free-tool/segment-anything": {
         "label": "智能分割",
+        "hint": "免费为图片中的任意物体生成蒙版",
         "params": {
           "pointX": {
             "label": "点 X",
@@ -1322,19 +1334,32 @@
         }
       },
       "free-tool/video-converter": {
-        "label": "视频转换"
+        "label": "视频转换",
+        "hint": "免费转换视频格式、编码或分辨率"
       },
       "free-tool/audio-converter": {
-        "label": "音频转换"
+        "label": "音频转换",
+        "hint": "免费在 MP3、WAV、FLAC 等格式间转换"
       },
       "free-tool/image-converter": {
-        "label": "图片转换"
+        "label": "图片转换",
+        "hint": "免费在 PNG、JPG、WebP 等格式间转换"
       },
       "free-tool/media-trimmer": {
-        "label": "媒体裁剪"
+        "label": "媒体裁剪",
+        "hint": "免费将视频或音频裁剪到指定时间段"
       },
       "free-tool/media-merger": {
-        "label": "媒体合并"
+        "label": "媒体合并",
+        "hint": "免费将多个视频或音频片段合并为一个"
+      },
+      "processing/concat": {
+        "label": "合并",
+        "hint": "将多个单值合并为一个数组（如多个 image → images[]）"
+      },
+      "processing/select": {
+        "label": "选择",
+        "hint": "按索引从数组中取出一个元素"
       }
     },
     "modelSelector": {
@@ -1414,6 +1439,10 @@
           "costEstimate": "实时显示每次执行的费用估算，运行前即可了解价格",
           "upstream": "连接上游节点的输出（图片、文本）作为输入——构建多步骤 AI 流水线"
         }
+      },
+      "concat": {
+        "title": "Concat 节点 — 合并多个输出",
+        "desc": "需要将多张图片传入「images」参数？使用 Concat 节点：\n\n1. 将每个上游节点的 image 输出分别连接到 Concat 的 value1、value2、value3 等输入口\n2. 将 Concat 的 output（此时为数组）连接到下游节点的 images 参数\n\n示例：\n[上传 A] → image → Concat → output（数组）→ [AI 任务].images\n[上传 B] → image ↗\n\n适用于任何类型的输出——图片、视频、文本——只要你需要将多个单值合并为一个数组输入。"
       },
       "canvas": {
         "title": "画布操作",

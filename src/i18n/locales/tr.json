@@ -1163,6 +1163,7 @@
     "nodeDefs": {
       "ai-task/run": {
         "label": "WaveSpeed API",
+        "hint": "Herhangi bir AI modelini çalıştırın — görsel, video, ses ve daha fazlası",
         "emptyHint": "Bu düğüme tıklayın, sonra model seçin →",
         "params": {
           "modelId": {
@@ -1172,6 +1173,7 @@
       },
       "input/media-upload": {
         "label": "Yükle",
+        "hint": "Pipeline girişi olarak görsel, video veya ses dosyası yükleyin",
         "inputs": {
           "media": {
             "label": "Medya"
@@ -1185,6 +1187,7 @@
       },
       "input/text-input": {
         "label": "Metin",
+        "hint": "Sonraki düğümlere beslemek için metin veya prompt girin",
         "params": {
           "text": {
             "label": "Metin"
@@ -1193,6 +1196,7 @@
       },
       "output/preview": {
         "label": "Önizleme",
+        "hint": "Sonucu doğrudan tuval üzerinde önizleyin",
         "inputs": {
           "input": {
             "label": "URL"
@@ -1216,6 +1220,7 @@
       },
       "output/file": {
         "label": "Dosya dışa aktar",
+        "hint": "Sonucu yerel bir dosyaya kaydedin",
         "inputs": {
           "url": {
             "label": "URL"
@@ -1243,25 +1248,32 @@
         }
       },
       "free-tool/image-enhancer": {
-        "label": "Görsel geliştirici"
+        "label": "Görsel geliştirici",
+        "hint": "Görselleri ücretsiz olarak büyütün ve netleştirin (2×–4×)"
       },
       "free-tool/background-remover": {
-        "label": "Arka plan kaldırıcı"
+        "label": "Arka plan kaldırıcı",
+        "hint": "Görsel arka planlarını ücretsiz otomatik olarak kaldırın"
       },
       "free-tool/face-enhancer": {
-        "label": "Yüz geliştirici"
+        "label": "Yüz geliştirici",
+        "hint": "Fotoğraflardaki yüzleri ücretsiz geliştirin ve onarın"
       },
       "free-tool/video-enhancer": {
-        "label": "Video geliştirici"
+        "label": "Video geliştirici",
+        "hint": "Video kalitesini ücretsiz büyütün ve geliştirin"
       },
       "free-tool/face-swapper": {
-        "label": "Yüz değiştirici"
+        "label": "Yüz değiştirici",
+        "hint": "Bir görseldeki yüzü ücretsiz olarak başka bir görsele aktarın"
       },
       "free-tool/image-eraser": {
-        "label": "Görsel silgisi"
+        "label": "Görsel silgisi",
+        "hint": "Maske kullanarak görsellerden nesneleri ücretsiz silin"
       },
       "free-tool/segment-anything": {
         "label": "Her şeyi böl",
+        "hint": "Bir görseldeki herhangi bir nesne için ücretsiz maske oluşturun",
         "params": {
           "pointX": {
             "label": "Nokta X",
@@ -1277,19 +1289,32 @@
         }
       },
       "free-tool/video-converter": {
-        "label": "Video dönüştürücü"
+        "label": "Video dönüştürücü",
+        "hint": "Video formatını, codec'ini veya çözünürlüğünü ücretsiz dönüştürün"
       },
       "free-tool/audio-converter": {
-        "label": "Ses dönüştürücü"
+        "label": "Ses dönüştürücü",
+        "hint": "Sesi MP3, WAV, FLAC ve daha fazlası arasında ücretsiz dönüştürün"
       },
       "free-tool/image-converter": {
-        "label": "Görsel dönüştürücü"
+        "label": "Görsel dönüştürücü",
+        "hint": "Görselleri PNG, JPG, WebP ve daha fazlası arasında ücretsiz dönüştürün"
       },
       "free-tool/media-trimmer": {
-        "label": "Medya kırpıcı"
+        "label": "Medya kırpıcı",
+        "hint": "Video veya sesi belirli bir zaman aralığına ücretsiz kırpın"
       },
       "free-tool/media-merger": {
-        "label": "Medya birleştirici"
+        "label": "Medya birleştirici",
+        "hint": "Birden fazla video veya ses klibini ücretsiz olarak birleştirin"
+      },
+      "processing/concat": {
+        "label": "Birleştir",
+        "hint": "Birden fazla tekil değeri bir diziye birleştirin (ör. görseller → görseller[])"
+      },
+      "processing/select": {
+        "label": "Seç",
+        "hint": "Bir diziden indekse göre bir öğe seçin"
       }
     },
     "modelSelector": {
@@ -1399,6 +1424,10 @@
           "costEstimate": "Her calistirma icin gercek zamanli maliyet tahmini ile calistirmadan once fiyati gorun",
           "upstream": "Yukari akistaki dugum ciktilarini (goruntu, metin) girdi olarak baglayin — cok adimli AI pipeline'lari kurun"
         }
+      },
+      "concat": {
+        "title": "Concat Dugumu — Birden Fazla Ciktiyi Birlestir",
+        "desc": "Birden fazla gorseli \"images\" girisine aktarmaniz mi gerekiyor? Concat dugumunu kullanin:\n\n1. Her ust dugumun image ciktisini Concat'in value1, value2, value3 vb. girislerine baglayin\n2. Concat'in output ciktisini (artik bir dizi) alt dugumun images parametresine baglayin\n\nOrnek:\n[Yukleme A] → image → Concat → output (dizi) → [AI Gorevi].images\n[Yukleme B] → image ↗\n\nBu, herhangi bir cikti turu icin calisir — gorsel, video, metin — birden fazla tekil degeri tek bir dizi girisinde birlestirmeniz gerektiginde."
       },
       "canvas": {
         "title": "Tuval Etkilesimleri",
