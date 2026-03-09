@@ -126,11 +126,6 @@ export function OutputDisplay({
   const autoSavedUrlsRef = useRef<Set<string>>(new Set());
   const prevLoadingRef = useRef(false);
 
-  // Result view state (desktop: idleFallback mode)
-  const [hasViewedResults, setHasViewedResults] = useState(
-    () => outputs.length > 0 && !isLoading,
-  );
-
   // Game state (mobile: no idleFallback, show FlappyBird)
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [showGame, setShowGame] = useState(
@@ -210,19 +205,11 @@ export function OutputDisplay({
   // Reset view state when outputs are cleared (new run starting)
   useEffect(() => {
     if (outputs.length === 0 && !isLoading && !error) {
-      setHasViewedResults(false);
       setShowGame(true);
       setIsGameStarted(false);
       setGameEndedWithResults(false);
     }
   }, [outputs.length, isLoading, error]);
-
-  // When loading starts, reset hasViewedResults so user sees "View Result" when done
-  useEffect(() => {
-    if (isLoading) {
-      setHasViewedResults(false);
-    }
-  }, [isLoading]);
 
   // Auto-switch from game to results when generation completes (mobile only)
   useEffect(() => {
@@ -501,40 +488,33 @@ export function OutputDisplay({
     }
   }
 
-  // --- Desktop: FeaturedModelsPanel fallback (when idleFallback provided) ---
-  if (
-    idleFallback &&
-    (outputs.length === 0 ||
-      (outputs.length > 0 && !isLoading && !hasViewedResults))
-  ) {
+  // --- Desktop: Loading state (when idleFallback provided) ---
+  if (idleFallback && isLoading) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-4 rounded-xl border border-border/50 bg-card/30">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+          <div className="relative rounded-full bg-primary/10 p-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-sm font-medium text-foreground">
+            {t("playground.generating")}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {t("playground.generatingHint", "This may take a few seconds...")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Desktop: FeaturedModelsPanel fallback (when idle, no outputs) ---
+  if (idleFallback && outputs.length === 0) {
     return (
       <div className="relative h-full overflow-hidden rounded-xl">
         <div className="h-full overflow-auto">{idleFallback}</div>
-
-        {/* Loading indicator — floating, does not block FeaturedModels */}
-        {isLoading && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-background/90 backdrop-blur-sm border border-border/50 shadow-lg">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="text-sm font-medium text-muted-foreground">
-                {t("playground.generating")}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* "View Result" button — floating */}
-        {outputs.length > 0 && !isLoading && !hasViewedResults && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
-            <Button
-              onClick={() => setHasViewedResults(true)}
-              className="rounded-full px-5 shadow-lg gap-2"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              {t("playground.flappyBird.viewResults", "View Results")}
-            </Button>
-          </div>
-        )}
       </div>
     );
   }

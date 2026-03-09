@@ -471,8 +471,22 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
         },
       );
 
+      // Normalize outputs: some models return [{ url: "..." }] instead of ["..."]
+      const rawOutputs = result.outputs || [];
+      const outputs: (string | Record<string, unknown>)[] = rawOutputs.map(
+        (o) => {
+          if (
+            typeof o === "object" &&
+            o !== null &&
+            typeof (o as { url?: string }).url === "string"
+          ) {
+            return (o as { url: string }).url;
+          }
+          return o;
+        },
+      );
+
       // Build history items — split multi-media outputs into individual entries
-      const outputs = result.outputs || [];
       const historyItems: GenerationHistoryItem[] = [];
 
       const mediaEntries: { output: string; type: "image" | "video" }[] = [];
@@ -710,19 +724,33 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
         );
         const timing = Date.now() - startTime;
 
+        // Normalize outputs: some models return [{ url: "..." }] instead of ["..."]
+        const batchOutputs: (string | Record<string, unknown>)[] = (
+          result.outputs || []
+        ).map((o) => {
+          if (
+            typeof o === "object" &&
+            o !== null &&
+            typeof (o as { url?: string }).url === "string"
+          ) {
+            return (o as { url: string }).url;
+          }
+          return o;
+        });
+
         results[i] = {
           id: queue[i].id,
           index: i,
           input,
           prediction: result,
-          outputs: result.outputs || [],
+          outputs: batchOutputs,
           error: null,
           timing,
         };
 
         // Build history items for this single batch result
         const itemHistoryEntries: GenerationHistoryItem[] = [];
-        for (const output of result.outputs || []) {
+        for (const output of batchOutputs) {
           if (typeof output === "string") {
             const mType = isImageUrl(output)
               ? ("image" as const)
