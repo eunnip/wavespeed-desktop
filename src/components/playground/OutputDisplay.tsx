@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { isImageUrl, isVideoUrl, isAudioUrl } from "@/lib/mediaUtils";
 import { AudioPlayer } from "@/components/shared/AudioPlayer";
+import { FlappyBird } from "./FlappyBird";
 import { toast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 
@@ -125,10 +126,17 @@ export function OutputDisplay({
   const autoSavedUrlsRef = useRef<Set<string>>(new Set());
   const prevLoadingRef = useRef(false);
 
-  // Result view state
+  // Result view state (desktop: idleFallback mode)
   const [hasViewedResults, setHasViewedResults] = useState(
     () => outputs.length > 0 && !isLoading,
   );
+
+  // Game state (mobile: no idleFallback, show FlappyBird)
+  const [isGameStarted, setIsGameStarted] = useState(false);
+  const [showGame, setShowGame] = useState(
+    () => outputs.length === 0 || isLoading,
+  );
+  const [gameEndedWithResults, setGameEndedWithResults] = useState(false);
   const prevOutputsLengthRef = useRef(0);
 
   const { settings, loadSettings, saveAsset } = useAssetsStore();
@@ -203,6 +211,9 @@ export function OutputDisplay({
   useEffect(() => {
     if (outputs.length === 0 && !isLoading && !error) {
       setHasViewedResults(false);
+      setShowGame(true);
+      setIsGameStarted(false);
+      setGameEndedWithResults(false);
     }
   }, [outputs.length, isLoading, error]);
 
@@ -212,6 +223,23 @@ export function OutputDisplay({
       setHasViewedResults(false);
     }
   }, [isLoading]);
+
+  // Auto-switch from game to results when generation completes (mobile only)
+  useEffect(() => {
+    if (idleFallback) return; // Desktop uses idleFallback flow
+    const wasLoading = prevLoadingRef.current;
+    if (wasLoading && !isLoading && outputs.length > 0 && !error) {
+      setShowGame(false);
+    }
+  }, [isLoading, outputs.length, error, idleFallback]);
+
+  const handleGameStart = useCallback(() => {
+    setIsGameStarted(true);
+  }, []);
+
+  const handleGameEnd = useCallback(() => {
+    setGameEndedWithResults(true);
+  }, []);
 
   // Auto-save outputs only when generation completes (isLoading: true → false)
   useEffect(() => {
@@ -441,24 +469,47 @@ export function OutputDisplay({
     );
   }
 
-  // Idle / Loading / Awaiting view: show fallback or generating indicator
+  // --- Mobile: FlappyBird game (when no idleFallback) ---
+  if (!idleFallback) {
+    const showGameView =
+      outputs.length === 0 ||
+      isLoading ||
+      (showGame && (gameEndedWithResults || isGameStarted));
+
+    if (showGameView) {
+      return (
+        <div className="relative h-full overflow-hidden rounded-xl border border-border/70 bg-card/50">
+          <FlappyBird
+            onGameStart={handleGameStart}
+            onGameEnd={handleGameEnd}
+            isTaskRunning={isLoading}
+            taskStatus={t("playground.generating")}
+            idleMessage={
+              outputs.length === 0 && !isLoading
+                ? {
+                    title: t("playground.noOutputs"),
+                    subtitle: t("playground.configureAndRun"),
+                  }
+                : undefined
+            }
+            hasResults={outputs.length > 0 && !isLoading}
+            onViewResults={() => setShowGame(false)}
+            modelId={modelId}
+          />
+        </div>
+      );
+    }
+  }
+
+  // --- Desktop: FeaturedModelsPanel fallback (when idleFallback provided) ---
   if (
-    outputs.length === 0 ||
-    (outputs.length > 0 && !isLoading && !hasViewedResults)
+    idleFallback &&
+    (outputs.length === 0 ||
+      (outputs.length > 0 && !isLoading && !hasViewedResults))
   ) {
-    // Show fallback content with optional loading/result overlay
     return (
       <div className="relative h-full overflow-hidden rounded-xl">
-        {/* Fallback content (e.g. FeaturedModelsPanel) */}
-        {idleFallback ? (
-          <div className="h-full overflow-auto">{idleFallback}</div>
-        ) : (
-          <div className="h-full border border-border/70 bg-card/50 flex items-center justify-center">
-            <p className="text-sm text-muted-foreground">
-              {t("playground.noOutputs")}
-            </p>
-          </div>
-        )}
+        <div className="h-full overflow-auto">{idleFallback}</div>
 
         {/* Loading indicator — floating, does not block FeaturedModels */}
         {isLoading && (
@@ -472,7 +523,7 @@ export function OutputDisplay({
           </div>
         )}
 
-        {/* "View Result" button — floating, FeaturedModels still clickable behind */}
+        {/* "View Result" button — floating */}
         {outputs.length > 0 && !isLoading && !hasViewedResults && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
             <Button
