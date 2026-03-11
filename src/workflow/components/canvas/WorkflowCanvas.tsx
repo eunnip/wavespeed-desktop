@@ -355,6 +355,8 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
     nodeId?: string;
     edgeId?: string;
   } | null>(null);
+  // When the add-node menu is opened from a node's side button, store placement info
+  const sideAddRef = useRef<{ sourceNodeId: string; side: "left" | "right" } | null>(null);
   const [addNodeQuery, setAddNodeQuery] = useState("");
   const [addNodeCollapsed, setAddNodeCollapsed] = useState<
     Record<string, boolean>
@@ -664,7 +666,6 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
   const addNodeAtMenuPosition = useCallback(
     (def: NodeTypeDefinition) => {
       if (!contextMenu) return;
-      const position = projectMenuPosition(contextMenu.x, contextMenu.y);
       const defaultParams: Record<string, unknown> = {};
       for (const p of def.params) {
         if (p.default !== undefined) defaultParams[p.key] = p.default;
@@ -673,6 +674,39 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
         `workflow.nodeDefs.${def.type}.label`,
         def.label,
       );
+
+      // If opened from a node's side button, place the new node beside the source node
+      let position: { x: number; y: number };
+      const sideInfo = sideAddRef.current;
+      if (sideInfo) {
+        const sourceNode = nodes.find((n) => n.id === sideInfo.sourceNodeId);
+        if (sourceNode) {
+          const sourceEl = document.querySelector(
+            `.react-flow__node[data-id="${sideInfo.sourceNodeId}"]`,
+          ) as HTMLElement | null;
+          const sourceW = sourceEl?.offsetWidth ?? 380;
+          const GAP = 80;
+          if (sideInfo.side === "right") {
+            position = {
+              x: sourceNode.position.x + sourceW + GAP,
+              y: sourceNode.position.y,
+            };
+          } else {
+            // Place to the left; estimate new node width as default
+            const newNodeW = (defaultParams.__nodeWidth as number) ?? 380;
+            position = {
+              x: sourceNode.position.x - newNodeW - GAP,
+              y: sourceNode.position.y,
+            };
+          }
+        } else {
+          position = projectMenuPosition(contextMenu.x, contextMenu.y);
+        }
+        sideAddRef.current = null;
+      } else {
+        position = projectMenuPosition(contextMenu.x, contextMenu.y);
+      }
+
       addNode(
         def.type,
         position,
@@ -685,7 +719,7 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
       recordRecentNodeType(def.type);
       setContextMenu(null);
     },
-    [addNode, contextMenu, projectMenuPosition, t, recordRecentNodeType],
+    [addNode, contextMenu, nodes, projectMenuPosition, t, recordRecentNodeType],
   );
 
   const addNodeDisplayDefs = useMemo(() => {
@@ -1091,6 +1125,28 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
     window.addEventListener("workflow:fit-view", handleFitView);
     return () => window.removeEventListener("workflow:fit-view", handleFitView);
   }, []);
+
+  // Listen for "add node" button clicks from CustomNode side buttons
+  useEffect(() => {
+    const handleOpenAddNodeMenu = (e: Event) => {
+      const { x, y, sourceNodeId, side } = (e as CustomEvent).detail;
+      if (sourceNodeId && side) {
+        sideAddRef.current = { sourceNodeId, side };
+      } else {
+        sideAddRef.current = null;
+      }
+      openAddNodeMenu(x, y);
+    };
+    window.addEventListener(
+      "workflow:open-add-node-menu",
+      handleOpenAddNodeMenu,
+    );
+    return () =>
+      window.removeEventListener(
+        "workflow:open-add-node-menu",
+        handleOpenAddNodeMenu,
+      );
+  }, [openAddNodeMenu]);
 
   // Capture-phase wheel: when target is a text field or scrollable element (or inside one), scroll it and prevent React Flow from zooming
   useEffect(() => {
