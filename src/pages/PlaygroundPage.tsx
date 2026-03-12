@@ -59,16 +59,6 @@ import {
 type RightPanelTab = "result" | "featured" | "templates";
 
 /** Format raw model name/id for display. e.g. "google/nano-banana-pro/text-to-image" → "Google / Nano Banana Pro" */
-function formatModelDisplay(name: string): string {
-  const parts = name.split("/");
-  const fmt = (s: string) =>
-    s
-      .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  if (parts.length >= 2) return `${fmt(parts[0])} / ${fmt(parts[1])}`;
-  return fmt(parts[0]);
-}
 
 const isCapacitorNative = () => {
   try {
@@ -1020,9 +1010,8 @@ export function PlaygroundPage() {
                           <div
                             key={tab.id}
                             title={
-                              tab.selectedModel?.name
-                                ? formatModelDisplay(tab.selectedModel.name)
-                                : t("playground.tabs.newTab")
+                              tab.selectedModel?.model_id ||
+                              t("playground.tabs.newTab")
                             }
                             onClick={() => {
                               handleTabClick(tab.id);
@@ -1042,9 +1031,8 @@ export function PlaygroundPage() {
                             )}
                             <div className="flex-1 min-w-0">
                               <div className="truncate font-medium">
-                                {tab.selectedModel?.name
-                                  ? formatModelDisplay(tab.selectedModel.name)
-                                  : t("playground.tabs.newTab")}
+                                {tab.selectedModel?.model_id ||
+                                  t("playground.tabs.newTab")}
                               </div>
                               <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                                 {tab.selectedModel?.type && (
@@ -1144,9 +1132,8 @@ export function PlaygroundPage() {
                           <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
                         )}
                         <span className="truncate flex-1">
-                          {tab.selectedModel?.model_id
-                            ? formatModelDisplay(tab.selectedModel.model_id)
-                            : t("playground.tabs.newTab")}
+                          {tab.selectedModel?.model_id ||
+                            t("playground.tabs.newTab")}
                         </span>
                         <button
                           onClick={(e) => handleCloseTab(e, tab.id)}
