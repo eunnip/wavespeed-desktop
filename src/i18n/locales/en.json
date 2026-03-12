@@ -136,6 +136,7 @@
     "selectModelPrompt": "Select a model to configure parameters",
     "run": "Run",
     "running": "Running...",
+    "abort": "Abort",
     "stop": "Stop",
     "parameters": "Parameters",
     "output": "Output",

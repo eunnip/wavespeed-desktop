@@ -134,6 +134,7 @@
     "selectModelPrompt": "選擇一個模型以設定參數",
     "run": "執行",
     "running": "執行中...",
+    "abort": "中止",
     "stop": "停止",
     "parameters": "參數",
     "output": "輸出",

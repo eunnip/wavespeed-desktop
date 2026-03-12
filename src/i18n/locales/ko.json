@@ -134,6 +134,7 @@
     "selectModelPrompt": "매개변수를 구성하려면 모델을 선택하세요",
     "run": "실행",
     "running": "실행 중...",
+    "abort": "중단",
     "stop": "중지",
     "parameters": "매개변수",
     "output": "출력",

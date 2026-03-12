@@ -134,6 +134,7 @@
     "selectModelPrompt": "Parametreleri yapılandırmak için bir model seçin",
     "run": "Çalıştır",
     "running": "Çalışıyor...",
+    "abort": "İptal",
     "stop": "Durdur",
     "parameters": "Parametreler",
     "output": "Çıktı",

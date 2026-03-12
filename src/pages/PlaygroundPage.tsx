@@ -121,6 +121,7 @@ export function PlaygroundPage() {
     resetForm,
     runPrediction,
     runBatch,
+    abortRun,
     clearBatchResults,
     generateBatchInputs,
     setUploading,
@@ -933,11 +934,12 @@ export function PlaygroundPage() {
                     isRunning={activeTab?.isRunning ?? false}
                     isUploading={(activeTab?.uploadingCount ?? 0) > 0}
                     onRun={handleRun}
+                    onAbort={abortRun}
                     runLabel={t("playground.run")}
                     runningLabel={
                       activeTab?.batchState?.isRunning
-                        ? `${t("playground.running")} (${activeTab.batchState.queue.length})`
-                        : t("playground.running")
+                        ? `${t("playground.abort", "Abort")} (${activeTab.batchState.queue.length})`
+                        : t("playground.abort", "Abort")
                     }
                     price={
                       isPricingLoading

@@ -342,10 +342,9 @@ class WaveSpeedClient {
       throw new Error("No request ID in response");
     }
 
-    // Poll for result with retry on connection errors
+    // Poll for result with unlimited retry on connection errors
     const startTime = Date.now();
     let consecutiveErrors = 0;
-    const MAX_CONSECUTIVE_ERRORS = 10;
     while (true) {
       throwIfAborted();
       if (Date.now() - startTime > timeout) {
@@ -367,20 +366,15 @@ class WaveSpeedClient {
         }
       } catch (error) {
         if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
-        // Retry with exponential backoff on connection errors
+        // Retry with exponential backoff on connection errors (unlimited retries)
         if (this.isConnectionError(error)) {
           consecutiveErrors++;
-          if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-            throw new Error(
-              `Polling failed after ${MAX_CONSECUTIVE_ERRORS} consecutive connection errors`,
-            );
-          }
           const backoff = Math.min(
             1000 * Math.pow(2, consecutiveErrors - 1),
             10000,
           );
           console.warn(
-            `Connection error during polling (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}), retrying in ${backoff}ms...`,
+            `Connection error during polling (attempt ${consecutiveErrors}), retrying in ${backoff}ms...`,
             error,
           );
           await new Promise((resolve) => setTimeout(resolve, backoff));
