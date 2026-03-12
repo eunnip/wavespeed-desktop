@@ -133,6 +133,7 @@
     "selectModelPrompt": "Pilih model untuk mengkonfigurasi parameter",
     "run": "Jalankan",
     "running": "Sedang berjalan...",
+    "abort": "Batalkan",
     "stop": "Hentikan",
     "parameters": "Parameter",
     "output": "Output",

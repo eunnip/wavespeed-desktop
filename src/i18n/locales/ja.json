@@ -133,6 +133,7 @@
     "selectModelPrompt": "パラメータを設定するにはモデルを選択してください",
     "run": "実行",
     "running": "実行中...",
+    "abort": "中止",
     "stop": "停止",
     "parameters": "パラメータ",
     "output": "出力",

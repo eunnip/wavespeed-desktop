@@ -133,6 +133,7 @@
     "selectModelPrompt": "Chọn mô hình để cấu hình tham số",
     "run": "Chạy",
     "running": "Đang chạy...",
+    "abort": "Hủy bỏ",
     "stop": "Dừng",
     "parameters": "Tham số",
     "output": "Đầu ra",

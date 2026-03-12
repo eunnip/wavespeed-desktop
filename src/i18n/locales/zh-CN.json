@@ -135,6 +135,7 @@
     "selectModelPrompt": "选择一个模型以配置参数",
     "run": "运行",
     "running": "运行中...",
+    "abort": "中止",
     "stop": "停止",
     "parameters": "参数",
     "output": "输出",

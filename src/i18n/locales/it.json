@@ -133,6 +133,7 @@
     "selectModelPrompt": "Seleziona un modello per configurare i parametri",
     "run": "Esegui",
     "running": "In esecuzione...",
+    "abort": "Interrompi",
     "stop": "Ferma",
     "parameters": "Parametri",
     "output": "Output",

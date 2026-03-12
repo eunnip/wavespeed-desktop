@@ -9,7 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Play, Loader2, ChevronDown } from "lucide-react";
+import { Play, Square, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BatchControlsProps {
@@ -17,6 +17,7 @@ interface BatchControlsProps {
   isRunning?: boolean;
   isUploading?: boolean;
   onRun: () => void;
+  onAbort: () => void;
   runLabel: string;
   runningLabel: string;
   price?: string;
@@ -27,6 +28,7 @@ export function BatchControls({
   isRunning,
   isUploading,
   onRun,
+  onAbort,
   runLabel,
   runningLabel,
   price,
@@ -55,6 +57,20 @@ export function BatchControls({
   const displayLabel =
     enabled && repeatCount > 1 ? `${runLabel} (${repeatCount})` : runLabel;
 
+  if (isRunning) {
+    return (
+      <div className="flex rounded-lg border border-transparent shadow-sm">
+        <Button
+          className="flex-1 h-9 text-sm bg-red-600 hover:bg-red-700 text-white transition-colors shadow-none"
+          onClick={onAbort}
+        >
+          <Square className="mr-2 h-3.5 w-3.5 fill-current" />
+          {runningLabel}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex rounded-lg border border-transparent shadow-sm">
       {/* Main Run Button */}
@@ -64,27 +80,18 @@ export function BatchControls({
           "rounded-r-none border-r border-r-white/20 shadow-none",
         )}
         onClick={onRun}
-        disabled={disabled || isRunning || isUploading}
+        disabled={disabled || isUploading}
         title={isUploading ? t("playground.capture.uploading") : undefined}
       >
-        {isRunning ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            {runningLabel}
-          </>
-        ) : (
-          <>
-            <Play className="mr-2 h-4 w-4" />
-            {displayLabel}
-            {price && (
-              <span className="ml-1.5 text-xs opacity-70">
-                $
-                {enabled && repeatCount > 1
-                  ? (parseFloat(price) * repeatCount).toFixed(4)
-                  : price}
-              </span>
-            )}
-          </>
+        <Play className="mr-2 h-4 w-4" />
+        {displayLabel}
+        {price && (
+          <span className="ml-1.5 text-xs opacity-70">
+            $
+            {enabled && repeatCount > 1
+              ? (parseFloat(price) * repeatCount).toFixed(4)
+              : price}
+          </span>
         )}
       </Button>
 
@@ -96,7 +103,7 @@ export function BatchControls({
               "bg-blue-600 hover:bg-blue-700 text-white transition-colors",
               "rounded-l-none px-1.5 h-9 shadow-none",
             )}
-            disabled={disabled || isRunning || isUploading}
+            disabled={disabled || isUploading}
           >
             <ChevronDown className="h-4 w-4" />
           </Button>
