@@ -568,7 +568,11 @@ export function PlaygroundPage() {
   // When a tab is created with pre-loaded outputs (e.g. from History/Assets "Customize"),
   // auto-switch to the Result tab so the user sees the output immediately.
   useEffect(() => {
-    if (activeTab?.outputs && activeTab.outputs.length > 0 && rightPanelTab !== "result") {
+    if (
+      activeTab?.outputs &&
+      activeTab.outputs.length > 0 &&
+      rightPanelTab !== "result"
+    ) {
       setRightPanelTab("result");
       sessionStorage.setItem("pg_rightPanelTab", "result");
     }

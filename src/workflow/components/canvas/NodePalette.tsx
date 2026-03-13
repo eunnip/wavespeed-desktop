@@ -146,10 +146,14 @@ export function NodePalette({ definitions }: NodePaletteProps) {
       const x = center.x + (Math.random() - 0.5) * 60;
       const y = center.y + (Math.random() - 0.5) * 60;
 
-      const desktopModel = useModelsStore.getState().models.find((m) => m.model_id === model.model_id);
+      const desktopModel = useModelsStore
+        .getState()
+        .models.find((m) => m.model_id === model.model_id);
       let modelSchema: Array<{ name: string; default?: unknown }> = [];
       if (desktopModel) {
-        modelSchema = formFieldsToModelParamSchema(getFormFieldsFromModel(desktopModel));
+        modelSchema = formFieldsToModelParamSchema(
+          getFormFieldsFromModel(desktopModel),
+        );
       }
 
       const newNodeId = addNode(
@@ -219,7 +223,9 @@ export function NodePalette({ definitions }: NodePaletteProps) {
   }, [displayDefs]);
 
   // Flat list of all visible items for keyboard navigation
-  type PaletteItem = { kind: "def"; def: NodeTypeDefinition } | { kind: "model"; model: typeof storeModels[number] };
+  type PaletteItem =
+    | { kind: "def"; def: NodeTypeDefinition }
+    | { kind: "model"; model: (typeof storeModels)[number] };
   const flatItems = useMemo<PaletteItem[]>(() => {
     const items: PaletteItem[] = [];
     for (const [category, defs] of groupedDefs) {
@@ -366,12 +372,18 @@ export function NodePalette({ definitions }: NodePaletteProps) {
                           const myIdx = flatIdx++;
                           const isHighlighted = myIdx === highlightIndex;
                           const isAiTask = def.category === "ai-task";
-                          const hint = t(`workflow.nodeDefs.${def.type}.hint`, "");
+                          const hint = t(
+                            `workflow.nodeDefs.${def.type}.hint`,
+                            "",
+                          );
                           return (
                             <Tooltip key={def.type} delayDuration={0}>
                               <TooltipTrigger asChild>
                                 <div
-                                  ref={(el) => { if (isHighlighted && el) el.scrollIntoView({ block: "nearest" }); }}
+                                  ref={(el) => {
+                                    if (isHighlighted && el)
+                                      el.scrollIntoView({ block: "nearest" });
+                                  }}
                                   data-guide-node={def.type}
                                   draggable
                                   onDragStart={(e) => onDragStart(e, def.type)}
@@ -380,7 +392,9 @@ export function NodePalette({ definitions }: NodePaletteProps) {
                                   className={cn(
                                     "flex items-center gap-2 h-8 px-2 rounded-lg cursor-grab select-none",
                                     "text-[12px] text-foreground/70 transition-colors duration-100",
-                                    isHighlighted ? "bg-accent text-accent-foreground" : "hover:bg-muted hover:text-foreground",
+                                    isHighlighted
+                                      ? "bg-accent text-accent-foreground"
+                                      : "hover:bg-muted hover:text-foreground",
                                     "active:cursor-grabbing active:bg-muted/80",
                                   )}
                                 >
@@ -436,11 +450,15 @@ export function NodePalette({ definitions }: NodePaletteProps) {
                       const isHighlighted = myIdx === highlightIndex;
                       const parts = model.model_id.split("/");
                       const provider = parts[0] || "";
-                      const shortName = parts.slice(1).join("/") || model.model_id;
+                      const shortName =
+                        parts.slice(1).join("/") || model.model_id;
                       return (
                         <div
                           key={model.model_id}
-                          ref={(el) => { if (isHighlighted && el) el.scrollIntoView({ block: "nearest" }); }}
+                          ref={(el) => {
+                            if (isHighlighted && el)
+                              el.scrollIntoView({ block: "nearest" });
+                          }}
                           onClick={() => handleModelClick(model)}
                           onMouseEnter={() => setHighlightIndex(myIdx)}
                           title={model.model_id}
@@ -451,8 +469,12 @@ export function NodePalette({ definitions }: NodePaletteProps) {
                           )}
                         >
                           <div className="flex flex-col min-w-0 flex-1">
-                            <span className="text-[12px] font-semibold text-foreground truncate">{shortName}</span>
-                            <span className="text-[10px] text-muted-foreground/60 truncate">{provider}/</span>
+                            <span className="text-[12px] font-semibold text-foreground truncate">
+                              {shortName}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/60 truncate">
+                              {provider}/
+                            </span>
                           </div>
                           <span className="shrink-0 text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">
                             API

@@ -316,7 +316,10 @@ const HistoryCard = memo(function HistoryCard({
         {!isSelectionMode && item.status === "completed" && (
           <div className="absolute top-2 right-2 flex gap-1.5 z-10">
             <button
-              onClick={(e) => { e.stopPropagation(); onCustomize(item); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCustomize(item);
+              }}
               className="flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 backdrop-blur-sm text-white text-[10px] font-medium hover:bg-primary transition-colors"
               title={t("history.openInPlayground", "Open in Playground")}
             >
@@ -353,14 +356,22 @@ const HistoryCard = memo(function HistoryCard({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {item.status === "completed" && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCustomize(item); }}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCustomize(item);
+                  }}
+                >
                   <Sparkles className="mr-2 h-4 w-4" />
                   {t("common.customize", "Customize")}
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={(e) => { e.stopPropagation(); onDelete(item); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(item);
+                }}
                 className="text-destructive"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
@@ -437,7 +448,9 @@ export function HistoryPage() {
         status: item.status as any,
         outputs: item.outputs,
         has_nsfw_contents: item.has_nsfw_contents,
-        timings: item.execution_time ? { inference: item.execution_time } : undefined,
+        timings: item.execution_time
+          ? { inference: item.execution_time }
+          : undefined,
       };
 
       // Try local storage first (saved from previous Playground runs)
@@ -460,8 +473,17 @@ export function HistoryPage() {
 
       // Check if the history item itself carries inputs from the API list response
       const itemInputs = item.inputs || item.input;
-      if (itemInputs && typeof itemInputs === "object" && Object.keys(itemInputs).length > 0) {
-        createTab(model, normalizeApiInputsToFormValues(itemInputs as Record<string, unknown>), item.outputs, predictionResult);
+      if (
+        itemInputs &&
+        typeof itemInputs === "object" &&
+        Object.keys(itemInputs).length > 0
+      ) {
+        createTab(
+          model,
+          normalizeApiInputsToFormValues(itemInputs as Record<string, unknown>),
+          item.outputs,
+          predictionResult,
+        );
         setSelectedItem(null);
         navigate(`/playground/${encodeURIComponent(item.model)}`);
         return;
@@ -475,7 +497,9 @@ export function HistoryPage() {
           (details as any).input || (details as any).inputs || {};
         createTab(
           model,
-          Object.keys(apiInput).length > 0 ? normalizeApiInputsToFormValues(apiInput) : undefined,
+          Object.keys(apiInput).length > 0
+            ? normalizeApiInputsToFormValues(apiInput)
+            : undefined,
           item.outputs,
           predictionResult,
         );
@@ -489,7 +513,14 @@ export function HistoryPage() {
         setIsOpeningPlayground(false);
       }
     },
-    [getModelById, getLocalInputs, findFormValuesByPredictionId, createTab, navigate, t],
+    [
+      getModelById,
+      getLocalInputs,
+      findFormValuesByPredictionId,
+      createTab,
+      navigate,
+      t,
+    ],
   );
 
   // Navigate to previous/next history item (with loop support)

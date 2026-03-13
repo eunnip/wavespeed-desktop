@@ -282,10 +282,7 @@ const AssetCard = memo(function AssetCard({
 
         {/* Type badge */}
         {!isSelectionMode && (
-          <Badge
-            variant="secondary"
-            className="absolute top-2 left-2 text-xs"
-          >
+          <Badge variant="secondary" className="absolute top-2 left-2 text-xs">
             <AssetTypeIcon type={asset.type} className="h-3 w-3 mr-1" />
             {t(`assets.types.${asset.type}`)}
           </Badge>
@@ -294,16 +291,23 @@ const AssetCard = memo(function AssetCard({
         {!isSelectionMode && (
           <div className="absolute top-2 right-2 flex gap-1.5 z-10">
             <button
-              onClick={(e) => { e.stopPropagation(); onToggleFavorite(asset); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite(asset);
+              }}
               className={cn(
                 "flex items-center justify-center w-6 h-6 rounded-md backdrop-blur-sm transition-colors",
                 asset.favorite
                   ? "bg-yellow-500/80 text-white hover:bg-yellow-500"
-                  : "bg-black/60 text-white hover:bg-black/80"
+                  : "bg-black/60 text-white hover:bg-black/80",
               )}
-              title={asset.favorite ? t("assets.unfavorite") : t("assets.favorite")}
+              title={
+                asset.favorite ? t("assets.unfavorite") : t("assets.favorite")
+              }
             >
-              <Star className={cn("h-3 w-3", asset.favorite && "fill-current")} />
+              <Star
+                className={cn("h-3 w-3", asset.favorite && "fill-current")}
+              />
             </button>
           </div>
         )}
@@ -422,7 +426,11 @@ export function AssetsPage() {
   const isActive = usePageActive("/assets");
   const { createTab, findFormValuesByPredictionId } = usePlaygroundStore();
   const { getModelById } = useModelsStore();
-  const { get: getLocalInputs, load: loadPredictionInputs, isLoaded: inputsLoaded } = usePredictionInputsStore();
+  const {
+    get: getLocalInputs,
+    load: loadPredictionInputs,
+    isLoaded: inputsLoaded,
+  } = usePredictionInputsStore();
   const {
     assets,
     isLoaded,
@@ -640,21 +648,30 @@ export function AssetsPage() {
       if (!model) {
         toast({
           title: t("common.error"),
-          description: t("history.modelNotAvailable", "Model is no longer available"),
+          description: t(
+            "history.modelNotAvailable",
+            "Model is no longer available",
+          ),
           variant: "destructive",
         });
         return;
       }
 
       // Build output from asset URL for display in Playground
-      const assetUrl = asset.originalUrl || (asset.filePath ? `local-asset://${encodeURIComponent(asset.filePath)}` : "");
+      const assetUrl =
+        asset.originalUrl ||
+        (asset.filePath
+          ? `local-asset://${encodeURIComponent(asset.filePath)}`
+          : "");
       const initialOutputs = assetUrl ? [assetUrl] : [];
-      const predictionResult = assetUrl ? {
-        id: asset.predictionId || asset.id,
-        model: asset.modelId,
-        status: "completed" as const,
-        outputs: initialOutputs,
-      } : null;
+      const predictionResult = assetUrl
+        ? {
+            id: asset.predictionId || asset.id,
+            model: asset.modelId,
+            status: "completed" as const,
+            outputs: initialOutputs,
+          }
+        : null;
 
       // Try local storage first
       if (asset.predictionId) {
@@ -667,7 +684,9 @@ export function AssetsPage() {
         }
 
         // Check Playground tabs' generationHistory
-        const historyFormValues = findFormValuesByPredictionId(asset.predictionId);
+        const historyFormValues = findFormValuesByPredictionId(
+          asset.predictionId,
+        );
         if (historyFormValues) {
           createTab(model, historyFormValues, initialOutputs, predictionResult);
           setPreviewAsset(null);
@@ -680,11 +699,24 @@ export function AssetsPage() {
       if (asset.predictionId) {
         setIsOpeningPlayground(true);
         try {
-          const details = await apiClient.getPredictionDetails(asset.predictionId);
-          const apiInput = (details as any).input || (details as any).inputs || {};
+          const details = await apiClient.getPredictionDetails(
+            asset.predictionId,
+          );
+          const apiInput =
+            (details as any).input || (details as any).inputs || {};
           // Use API outputs if available, otherwise use asset URL
-          const apiOutputs = details.outputs && details.outputs.length > 0 ? details.outputs : initialOutputs;
-          createTab(model, Object.keys(apiInput).length > 0 ? normalizeApiInputsToFormValues(apiInput) : undefined, apiOutputs, predictionResult);
+          const apiOutputs =
+            details.outputs && details.outputs.length > 0
+              ? details.outputs
+              : initialOutputs;
+          createTab(
+            model,
+            Object.keys(apiInput).length > 0
+              ? normalizeApiInputsToFormValues(apiInput)
+              : undefined,
+            apiOutputs,
+            predictionResult,
+          );
           setPreviewAsset(null);
           navigate(`/playground/${encodeURIComponent(asset.modelId)}`);
         } catch {
@@ -700,7 +732,14 @@ export function AssetsPage() {
         navigate(`/playground/${encodeURIComponent(asset.modelId)}`);
       }
     },
-    [getModelById, getLocalInputs, findFormValuesByPredictionId, createTab, navigate, t],
+    [
+      getModelById,
+      getLocalInputs,
+      findFormValuesByPredictionId,
+      createTab,
+      navigate,
+      t,
+    ],
   );
 
   const handleSelectAll = useCallback(() => {

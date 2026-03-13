@@ -204,7 +204,9 @@ interface PlaygroundState {
   consumePendingFormValues: () => Record<string, unknown> | null;
 
   // Find formValues from any tab's generationHistory by prediction ID
-  findFormValuesByPredictionId: (predictionId: string) => Record<string, unknown> | null;
+  findFormValuesByPredictionId: (
+    predictionId: string,
+  ) => Record<string, unknown> | null;
 }
 
 // Check if a value is considered "empty"
@@ -252,7 +254,12 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
   tabs: initialSession?.tabs ?? [],
   activeTabId: initialSession?.activeTabId ?? null,
 
-  createTab: (model?: Model, initialFormValues?: Record<string, unknown>, initialOutputs?: (string | Record<string, unknown>)[], initialPrediction?: PredictionResult | null) => {
+  createTab: (
+    model?: Model,
+    initialFormValues?: Record<string, unknown>,
+    initialOutputs?: (string | Record<string, unknown>)[],
+    initialPrediction?: PredictionResult | null,
+  ) => {
     const id = `tab-${++tabCounter}`;
     const newTab = createEmptyTab(id, model);
     if (initialFormValues) {
