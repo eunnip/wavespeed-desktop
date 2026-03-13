@@ -103,6 +103,8 @@ export interface ExecutionState {
     Array<{ urls: string[]; time: string; cost?: number; durationMs?: number }>
   >;
   _wasRunning: boolean;
+  _lastRunType: "all" | "single" | null;
+  _lastRunNodeLabel: string | null;
   _fetchedNodes: Set<string>;
 
   /** Run sessions for the global monitor panel */
@@ -172,6 +174,8 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
   errorMessages: {},
   lastResults: {},
   _wasRunning: false,
+  _lastRunType: null,
+  _lastRunNodeLabel: null,
   _fetchedNodes: new Set(),
   runSessions: [],
   showRunMonitor: false,
@@ -179,6 +183,7 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
   toggleRunMonitor: () => set((s) => ({ showRunMonitor: !s.showRunMonitor })),
 
   runAllInBrowser: async (nodes, edges) => {
+    set({ _lastRunType: "all", _lastRunNodeLabel: null });
     const nodeLabels: Record<string, string> = {};
     for (const n of nodes) {
       nodeLabels[n.id] =
@@ -278,6 +283,9 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
   },
 
   runNodeInBrowser: async (nodes, edges, nodeId) => {
+    const targetNode = nodes.find((n) => n.id === nodeId);
+    const targetLabel = (targetNode?.data?.label as string) || targetNode?.data?.nodeType || nodeId.slice(0, 8);
+    set({ _lastRunType: "single", _lastRunNodeLabel: targetLabel });
     const upstream = new Set<string>([nodeId]);
     const reverse = new Map<string, string[]>();
     for (const e of edges) {
@@ -410,6 +418,7 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
     const { nodes, edges } = useWorkflowStore.getState();
     const browserNodes = nodes.map((n) => ({
       id: n.id,
+      parentNode: n.parentNode,
       data: {
         nodeType: n.data?.nodeType ?? "",
         params: {
@@ -432,6 +441,7 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
     const { nodes, edges } = useWorkflowStore.getState();
     const browserNodes = nodes.map((n) => ({
       id: n.id,
+      parentNode: n.parentNode,
       data: {
         nodeType: n.data?.nodeType ?? "",
         params: {

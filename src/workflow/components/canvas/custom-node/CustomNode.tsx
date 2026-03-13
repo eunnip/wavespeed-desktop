@@ -60,6 +60,7 @@ function CustomNodeComponent({
   const edges = useWorkflowStore((s) => s.edges);
   const updateNodeParams = useWorkflowStore((s) => s.updateNodeParams);
   const updateNodeData = useWorkflowStore((s) => s.updateNodeData);
+  const syncExposedParamsOnModelSwitch = useWorkflowStore((s) => s.syncExposedParamsOnModelSwitch);
   const workflowId = useWorkflowStore((s) => s.workflowId);
   const isDirty = useWorkflowStore((s) => s.isDirty);
   const { runNode, cancelNode, retryNode } = useExecutionStore();
@@ -299,6 +300,17 @@ function CustomNodeComponent({
         label: finalLabel,
       });
 
+      // Sync iterator exposed params if this node is inside an iterator
+      // - Remove exposed inputs whose param keys no longer exist in the new model
+      // - Update labels/namespacedKeys for params that still exist (label changed)
+      // - Keep output exposed params (output handle is always "output")
+      // Include both model schema fields and static input port keys
+      const newInputKeys = [
+        ...inputSchemaForNode.map((p) => p.name),
+        ...(data.inputDefinitions ?? []).map((d: { key: string }) => d.key),
+      ];
+      syncExposedParamsOnModelSwitch(id, finalLabel, newInputKeys);
+
       const execStore = useExecutionStore.getState();
       execStore.updateNodeStatus(id, "idle");
       useExecutionStore.setState((s) => {
@@ -316,6 +328,7 @@ function CustomNodeComponent({
       id,
       updateNodeData,
       updateNodeParams,
+      syncExposedParamsOnModelSwitch,
       removeEdgesByIds,
       allNodes,
     ],
@@ -706,8 +719,8 @@ function CustomNodeComponent({
           bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]
           border-2
           ${resizing ? "" : "transition-all duration-300"}
-          ${running ? "border-blue-500 animate-pulse-subtle" : ""}
-          ${!running && selected ? "border-blue-500 shadow-[0_0_20px_rgba(96,165,250,.25)] ring-1 ring-blue-500/30" : ""}
+          ${running ? (isInsideIterator ? "border-cyan-500 animate-pulse-subtle" : "border-blue-500 animate-pulse-subtle") : ""}
+          ${!running && selected ? (isInsideIterator ? "border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,.25)] ring-1 ring-cyan-500/30" : "border-blue-500 shadow-[0_0_20px_rgba(96,165,250,.25)] ring-1 ring-blue-500/30") : ""}
           ${!running && !selected && status === "confirmed" ? "border-green-500/70" : ""}
           ${!running && !selected && status === "unconfirmed" ? "border-orange-500/70" : ""}
           ${!running && !selected && status === "error" ? "border-red-500/70" : ""}
@@ -719,13 +732,13 @@ function CustomNodeComponent({
         {/* ── Title bar ──────────── */}
         <div
           className={`flex items-center gap-1.5 px-3 py-2 select-none
-        ${running ? "bg-blue-500/10" : status === "confirmed" ? "bg-green-500/8" : status === "error" ? "bg-red-500/8" : ""}`}
+        ${running ? (isInsideIterator ? "bg-cyan-500/10" : "bg-blue-500/10") : status === "confirmed" ? "bg-green-500/8" : status === "error" ? "bg-red-500/8" : ""}`}
         >
           <span
             className={`w-2 h-2 rounded-full flex-shrink-0
           ${
             running
-              ? "bg-blue-500 animate-pulse"
+              ? (isInsideIterator ? "bg-cyan-500 animate-pulse" : "bg-blue-500 animate-pulse")
               : status === "confirmed"
                 ? "bg-green-500"
                 : status === "error"

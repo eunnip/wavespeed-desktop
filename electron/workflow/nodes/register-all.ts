@@ -1,6 +1,7 @@
 import { nodeRegistry } from "./registry";
 import { mediaUploadDef, MediaUploadHandler } from "./input/media-upload";
 import { textInputDef, TextInputHandler } from "./input/text-input";
+import { directoryImportDef, DirectoryImportHandler } from "./input/directory-import";
 import { aiTaskDef, AITaskHandler } from "./ai-task/run";
 import { fileExportDef, FileExportHandler } from "./output/file";
 import { previewDisplayDef, PreviewDisplayHandler } from "./output/preview";
@@ -12,6 +13,7 @@ import { iteratorDef, IteratorNodeHandler } from "./control/iterator";
 export function registerAllNodes(): void {
   nodeRegistry.register(mediaUploadDef, new MediaUploadHandler());
   nodeRegistry.register(textInputDef, new TextInputHandler());
+  nodeRegistry.register(directoryImportDef, new DirectoryImportHandler());
   nodeRegistry.register(aiTaskDef, new AITaskHandler());
   nodeRegistry.register(fileExportDef, new FileExportHandler());
   nodeRegistry.register(previewDisplayDef, new PreviewDisplayHandler());

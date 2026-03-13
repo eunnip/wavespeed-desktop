@@ -57,6 +57,38 @@ export const textInputDef: NodeTypeDefinition = {
   ],
 };
 
+export const directoryImportDef: NodeTypeDefinition = {
+  type: "input/directory-import",
+  category: "input",
+  label: "Directory",
+  inputs: [],
+  outputs: [{ key: "output", label: "Files", dataType: "any", required: true }],
+  params: [
+    {
+      key: "directoryPath",
+      label: "Directory",
+      type: "string",
+      dataType: "text",
+      connectable: false,
+      default: "",
+    },
+    {
+      key: "mediaType",
+      label: "File Type",
+      type: "select",
+      dataType: "text",
+      connectable: false,
+      default: "image",
+      options: [
+        { label: "Images", value: "image" },
+        { label: "Videos", value: "video" },
+        { label: "Audio", value: "audio" },
+        { label: "All Media", value: "all" },
+      ],
+    },
+  ],
+};
+
 // ─── AI Task ───────────────────────────────────────────────────────────────
 export const aiTaskDef: NodeTypeDefinition = {
   type: "ai-task/run",
@@ -521,6 +553,7 @@ export const selectDef: NodeTypeDefinition = {
 export const BROWSER_NODE_DEFINITIONS: NodeTypeDefinition[] = [
   mediaUploadDef,
   textInputDef,
+  directoryImportDef,
   aiTaskDef,
   fileExportDef,
   previewDisplayDef,

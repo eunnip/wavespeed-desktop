@@ -223,6 +223,8 @@ export function WorkflowPage() {
   const { cancelAll, activeExecutions } = useExecutionStore();
   const initListeners = useExecutionStore((s) => s.initListeners);
   const wasRunning = useExecutionStore((s) => s._wasRunning);
+  const lastRunType = useExecutionStore((s) => s._lastRunType);
+  const lastRunNodeLabel = useExecutionStore((s) => s._lastRunNodeLabel);
   const nodeStatuses = useExecutionStore((s) => s.nodeStatuses);
   const isRunning = activeExecutions.size > 0;
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -1046,16 +1048,21 @@ export function WorkflowPage() {
   useEffect(() => {
     if (prevWasRunning.current && !wasRunning && !isRunning) {
       const hasError = Object.values(nodeStatuses).some((s) => s === "error");
+      const nodeName = lastRunType === "single" && lastRunNodeLabel ? lastRunNodeLabel : null;
       setExecToast({
         type: hasError ? "error" : "success",
         msg: hasError
-          ? "Workflow completed with errors"
-          : "All nodes executed successfully",
+          ? nodeName
+            ? `${nodeName} executed with errors`
+            : "Workflow completed with errors"
+          : nodeName
+            ? `${nodeName} executed successfully`
+            : "All nodes executed successfully",
       });
       setTimeout(() => setExecToast(null), 4000);
     }
     prevWasRunning.current = wasRunning;
-  }, [wasRunning, isRunning, nodeStatuses]);
+  }, [wasRunning, isRunning, nodeStatuses, lastRunType, lastRunNodeLabel]);
 
   // Listen for workflow:toast events dispatched from the store (e.g. cycle detection)
   useEffect(() => {
@@ -1256,6 +1263,7 @@ export function WorkflowPage() {
     const runAllInBrowser = useExecutionStore.getState().runAllInBrowser;
     const browserNodes = latestNodes.map((n) => ({
       id: n.id,
+      parentNode: n.parentNode,
       data: {
         nodeType: n.data?.nodeType ?? "",
         params: {

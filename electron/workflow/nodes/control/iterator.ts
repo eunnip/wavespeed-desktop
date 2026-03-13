@@ -29,6 +29,12 @@ export const iteratorDef: NodeTypeDefinition = {
       validation: { min: 1 },
     },
     {
+      key: "iterationMode",
+      label: "Iteration Mode",
+      type: "string",
+      default: "fixed",
+    },
+    {
       key: "exposedInputs",
       label: "Exposed Inputs",
       type: "string",
@@ -52,7 +58,8 @@ export class IteratorNodeHandler extends BaseNodeHandler {
     const start = Date.now();
 
     // 1. Parse iteration config from params
-    const iterationCount = Math.max(1, Number(ctx.params.iterationCount) || 1);
+    const iterationMode = String(ctx.params.iterationMode ?? "fixed");
+    const fixedCount = Math.max(1, Number(ctx.params.iterationCount) || 1);
     const exposedInputs = this.parseExposedParams(ctx.params.exposedInputs);
     const exposedOutputs = this.parseExposedParams(ctx.params.exposedOutputs);
 
@@ -87,18 +94,63 @@ export class IteratorNodeHandler extends BaseNodeHandler {
     const childNodeMap = new Map(childNodes.map((n) => [n.id, n]));
 
     // Build input routing: map from subNodeId -> paramKey -> external value
-    const inputRouting = new Map<string, Map<string, unknown>>();
+    // In auto mode, store the raw values (may be arrays) for per-iteration slicing
+    const inputRoutingRaw = new Map<string, Map<string, unknown>>();
     for (const ep of exposedInputs) {
       const externalValue = ctx.inputs[ep.namespacedKey];
       if (externalValue !== undefined) {
-        if (!inputRouting.has(ep.subNodeId)) {
-          inputRouting.set(ep.subNodeId, new Map());
+        if (!inputRoutingRaw.has(ep.subNodeId)) {
+          inputRoutingRaw.set(ep.subNodeId, new Map());
         }
-        inputRouting.get(ep.subNodeId)!.set(ep.paramKey, externalValue);
+        inputRoutingRaw.get(ep.subNodeId)!.set(ep.paramKey, externalValue);
       }
     }
 
-    // 5. Execute iterations
+    // 5. Determine iteration count
+    let iterationCount: number;
+    // Collect all external input values for auto-mode analysis
+    const allExternalValues: unknown[] = [];
+    for (const ep of exposedInputs) {
+      const v = ctx.inputs[ep.namespacedKey];
+      if (v !== undefined) allExternalValues.push(v);
+    }
+
+    if (iterationMode === "auto") {
+      // Find the longest array among external inputs
+      const arrayLengths = allExternalValues
+        .filter((v) => Array.isArray(v))
+        .map((v) => (v as unknown[]).length);
+
+      if (arrayLengths.length === 0) {
+        // No array inputs found — if there are any inputs at all, run once; otherwise error
+        if (allExternalValues.length > 0) {
+          iterationCount = 1;
+        } else {
+          return {
+            status: "error",
+            outputs: {},
+            durationMs: Date.now() - start,
+            cost: 0,
+            error: "Auto mode: no external inputs connected. Connect an array input or switch to fixed mode.",
+          };
+        }
+      } else {
+        iterationCount = Math.max(...arrayLengths);
+        // Empty array → 0 iterations
+        if (iterationCount === 0) {
+          return {
+            status: "success",
+            outputs: {},
+            durationMs: Date.now() - start,
+            cost: 0,
+          };
+        }
+      }
+    } else {
+      iterationCount = fixedCount;
+    }
+
+    // 6. Execute iterations
     const iterationResults: Array<Record<string, unknown>> = [];
     let totalCost = 0;
 
@@ -134,11 +186,22 @@ export class IteratorNodeHandler extends BaseNodeHandler {
           // Build params for this sub-node: base params + external inputs + iteration index
           const subParams: Record<string, unknown> = { ...subNode.params };
 
-          // Inject external input values
-          const externalInputs = inputRouting.get(subNodeId);
+          // Inject external input values (with auto-mode array slicing)
+          const externalInputs = inputRoutingRaw.get(subNodeId);
           if (externalInputs) {
-            for (const [paramKey, value] of externalInputs) {
-              subParams[paramKey] = value;
+            for (const [paramKey, rawValue] of externalInputs) {
+              if (iterationMode === "auto" && Array.isArray(rawValue)) {
+                // Slice: use element at index i, pad with last element if shorter
+                const arr = rawValue as unknown[];
+                subParams[paramKey] = arr.length > 0 ? arr[Math.min(i, arr.length - 1)] : undefined;
+              } else if (iterationMode === "fixed" && Array.isArray(rawValue)) {
+                // Fixed mode with array: cycle with modulo
+                const arr = rawValue as unknown[];
+                subParams[paramKey] = arr.length > 0 ? arr[i % arr.length] : undefined;
+              } else {
+                // Non-array: broadcast same value to all iterations
+                subParams[paramKey] = rawValue;
+              }
             }
           }
 
@@ -221,19 +284,13 @@ export class IteratorNodeHandler extends BaseNodeHandler {
       ctx.onProgress(((i + 1) / iterationCount) * 100, `Iteration ${i + 1}/${iterationCount} complete`);
     }
 
-    // 6. Aggregate results
+    // 6. Aggregate results — ALWAYS output arrays regardless of iteration count
+    //    This ensures downstream nodes always receive a consistent format.
+    //    N=1 → ["value"], N=3 → ["v1","v2","v3"], N=0 → []
     const outputs: Record<string, unknown> = {};
-    if (iterationCount === 1) {
-      // N=1: return results directly
-      Object.assign(outputs, iterationResults[0]);
-    } else {
-      // N>1: aggregate into arrays per exposed output
-      for (const ep of exposedOutputs) {
-        const handleKey = `output-${ep.namespacedKey}`;
-        outputs[handleKey] = iterationResults.map(
-          (r) => r[handleKey],
-        );
-      }
+    for (const ep of exposedOutputs) {
+      const handleKey = `output-${ep.namespacedKey}`;
+      outputs[handleKey] = iterationResults.map((r) => r[handleKey]);
     }
 
     return {

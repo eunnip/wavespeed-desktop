@@ -18,7 +18,6 @@ import { useWorkflowStore } from "../stores/workflow.store";
 
 const TITLE_BAR_HEIGHT = 40;
 const CLAMP_PADDING = 10;
-const PORT_STRIP_MIN_WIDTH = 24; // minimum width of port strips (when no ports)
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 
@@ -81,14 +80,10 @@ export function useIteratorAdoption() {
           const childW = (node.data?.params?.__nodeWidth as number) ?? 300;
           const childH = (node.data?.params?.__nodeHeight as number) ?? 80;
 
-          const inputDefs = parentIterator.data?.inputDefinitions ?? [];
-          const outputDefs = parentIterator.data?.outputDefinitions ?? [];
-          const leftStrip = (inputDefs as unknown[]).length > 0 ? 140 : PORT_STRIP_MIN_WIDTH;
-          const rightStrip = (outputDefs as unknown[]).length > 0 ? 140 : PORT_STRIP_MIN_WIDTH;
-          const minX = leftStrip + CLAMP_PADDING;
-          const maxX = Math.max(minX, itW - childW - rightStrip - CLAMP_PADDING);
+          const minX = CLAMP_PADDING;
+          const maxX = Math.max(minX, itW - childW - CLAMP_PADDING);
           const minY = TITLE_BAR_HEIGHT + CLAMP_PADDING;
-          const maxY = Math.max(minY, itH - childH - CLAMP_PADDING);
+          const maxY = Math.max(minY, itH - childH - CLAMP_PADDING - 40); // 40 = add node button area
 
           const clampedX = Math.min(Math.max(pos.x, minX), maxX);
           const clampedY = Math.min(Math.max(pos.y, minY), maxY);

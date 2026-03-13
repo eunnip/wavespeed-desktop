@@ -1,14 +1,19 @@
 /**
  * IteratorNodeContainer — ReactFlow custom node for the Iterator container.
  *
- * Layout:  [Left input port strip] [Internal canvas area] [Right output port strip]
+ * Exposed params appear as "capsule" handles on the left/right border:
+ *   [●──param name──●]
  *
- * Exposed params flow:
- *   External edge → Iterator left handle → (runtime maps to) child node param
- *   Child node output → (runtime maps to) Iterator right handle → External edge
+ * IN capsules (left border):
+ *   Left dot  = external target (outside nodes connect here)
+ *   Right dot = internal source (auto-connected to child node input)
  *
- * The ExposeParamPicker floats ABOVE the iterator (portal-style z-index)
- * so internal child nodes never obscure it.
+ * OUT capsules (right border):
+ *   Left dot  = internal target (auto-connected from child node output)
+ *   Right dot = external source (outside nodes connect from here)
+ *
+ * When a param is exposed via the picker, an internal edge is auto-created
+ * between the capsule's inner handle and the child node's corresponding handle.
  */
 import React, {
   memo,
@@ -20,14 +25,13 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
+import { Handle, Position, useReactFlow, useUpdateNodeInternals, type NodeProps } from "reactflow";
 import { useWorkflowStore } from "../../../stores/workflow.store";
 import { useUIStore } from "../../../stores/ui.store";
 import { useExecutionStore } from "../../../stores/execution.store";
 import type { PortDefinition } from "@/workflow/types/node-defs";
 import type { NodeStatus } from "@/workflow/types/execution";
 import type { ExposedParam } from "@/workflow/types/workflow";
-import { handleLeft, handleRight } from "../custom-node/CustomNodeHandleAnchor";
 import {
   Tooltip,
   TooltipTrigger,
@@ -41,10 +45,11 @@ const MIN_ITERATOR_WIDTH = 600;
 const MIN_ITERATOR_HEIGHT = 400;
 const CHILD_PADDING = 40;
 const TITLE_BAR_HEIGHT = 40;
-const PORT_STRIP_WIDTH = 140;
-const PORT_STRIP_EMPTY_WIDTH = 24;
-const PORT_ROW_HEIGHT = 32;
-const PORT_HEADER_HEIGHT = 28;
+const CAPSULE_HEIGHT = 28;
+const CAPSULE_GAP = 6;
+const CAPSULE_TOP_OFFSET = TITLE_BAR_HEIGHT + 56;
+const HANDLE_DOT = 10;
+const CAPSULE_LABEL_WIDTH = 110; // fixed width for capsule label area
 
 /* ── types ─────────────────────────────────────────────────────────── */
 
@@ -58,7 +63,7 @@ export interface IteratorNodeData {
   paramDefinitions?: unknown[];
 }
 
-/* ── Gear icon (reusable) ──────────────────────────────────────────── */
+/* ── Gear icon ─────────────────────────────────────────────────────── */
 
 const GearIcon = ({ size = 12 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -116,7 +121,6 @@ function ExposeParamPicker({
     [isExposed, exposeParam, unexposeParam, iteratorId, direction],
   );
 
-
   if (childNodes.length === 0) {
     return (
       <div className="nodrag nopan bg-[hsl(var(--popover))] border border-border rounded-lg shadow-2xl p-3 min-w-[220px]"
@@ -156,15 +160,12 @@ function ExposeParamPicker({
           let items: Array<{ key: string; label: string; dataType: string }>;
 
           if (direction === "input") {
-            // For inputs: show model input schema fields (the actual user-facing params like Image, Source Image, etc.)
-            // plus any input port definitions, but skip internal paramDefinitions like modelId
             const modelItems = modelSchema.map((m) => ({
               key: m.name,
               label: m.label || m.name.split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" "),
               dataType: m.mediaType ?? m.type ?? "any",
             }));
             const inputPortItems = childInputDefs.map((d) => ({ key: d.key, label: d.label, dataType: d.dataType }));
-            // If no model schema, fall back to visible paramDefinitions (for non-ai-task nodes like free-tools)
             if (modelItems.length === 0) {
               const visibleParams = paramDefs
                 .filter((d) => !d.key.startsWith("__") && d.key !== "modelId")
@@ -174,7 +175,6 @@ function ExposeParamPicker({
               items = [...modelItems, ...inputPortItems];
             }
           } else {
-            // For outputs: show each child node's output ports
             items = childOutputDefs.map((d) => ({ key: d.key, label: d.label, dataType: d.dataType }));
           }
 
@@ -235,7 +235,6 @@ function PickerPortal({
       }
     };
     update();
-    // Track viewport transform changes (pan/zoom)
     const viewport = nodeRef.current?.closest(".react-flow__viewport");
     let mo: MutationObserver | undefined;
     if (viewport) {
@@ -259,66 +258,24 @@ function PickerPortal({
   );
 }
 
-/* ── Add Node button portal — floats at bottom-center of iterator ── */
+/* ── Capsule handle style helpers ──────────────────────────────────── */
 
-function AddNodePortal({
-  nodeRef,
-  onClick,
-  label,
-  title,
-}: {
-  nodeRef: React.RefObject<HTMLDivElement>;
-  onClick: (e: React.MouseEvent) => void;
-  label: string;
-  title: string;
-}) {
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-
-  useEffect(() => {
-    const update = () => {
-      const rect = nodeRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      setPos({
-        top: rect.bottom - 36,
-        left: rect.left + rect.width / 2,
-      });
-    };
-    update();
-    const viewport = nodeRef.current?.closest(".react-flow__viewport");
-    let mo: MutationObserver | undefined;
-    if (viewport) {
-      mo = new MutationObserver(update);
-      mo.observe(viewport, { attributes: true, attributeFilter: ["style"] });
-    }
-    const ro = nodeRef.current ? new ResizeObserver(update) : null;
-    if (nodeRef.current && ro) ro.observe(nodeRef.current);
-    window.addEventListener("resize", update);
-    return () => { mo?.disconnect(); ro?.disconnect(); window.removeEventListener("resize", update); };
-  }, [nodeRef]);
-
-  if (!pos) return null;
-
-  return (
-    <div
-      className="nodrag nopan fixed"
-      style={{ top: pos.top, left: pos.left, transform: "translateX(-50%)", zIndex: 99998 }}
-      onMouseDown={(e) => e.stopPropagation()}
-    >
-      <button
-        onClick={onClick}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-medium
-          bg-cyan-500/10 text-cyan-400 border border-cyan-500/20
-          hover:bg-cyan-500/20 hover:border-cyan-500/40 transition-all cursor-pointer shadow-sm backdrop-blur-sm"
-        title={title}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        {label}
-      </button>
-    </div>
-  );
-}
+const dotStyle = (connected: boolean): React.CSSProperties => ({
+  width: HANDLE_DOT,
+  height: HANDLE_DOT,
+  borderRadius: "50%",
+  border: "2px solid hsl(var(--primary))",
+  background: connected ? "hsl(var(--primary))" : "hsl(var(--card))",
+  minWidth: HANDLE_DOT,
+  minHeight: HANDLE_DOT,
+  position: "relative" as const,
+  top: "auto",
+  left: "auto",
+  right: "auto",
+  bottom: "auto",
+  transform: "none",
+  zIndex: 40,
+});
 
 /* ── main component ────────────────────────────────────────────────── */
 
@@ -337,10 +294,12 @@ function IteratorNodeContainerComponent({
   const [showInputPicker, setShowInputPicker] = useState(false);
   const [showOutputPicker, setShowOutputPicker] = useState(false);
   const { getViewport, setNodes } = useReactFlow();
+  const updateNodeInternals = useUpdateNodeInternals();
   const updateNodeParams = useWorkflowStore((s) => s.updateNodeParams);
   const workflowId = useWorkflowStore((s) => s.workflowId);
   const removeNode = useWorkflowStore((s) => s.removeNode);
   const toggleNodePalette = useUIStore((s) => s.toggleNodePalette);
+  const edges = useWorkflowStore((s) => s.edges);
   const status = useExecutionStore(
     (s) => s.nodeStatuses[id] ?? "idle",
   ) as NodeStatus;
@@ -350,15 +309,49 @@ function IteratorNodeContainerComponent({
   const running = status === "running";
 
   const iterationCount = Number(data.params?.iterationCount ?? 1);
+  const iterationMode = String(data.params?.iterationMode ?? "fixed");
   const savedWidth = (data.params?.__nodeWidth as number) ?? MIN_ITERATOR_WIDTH;
   const savedHeight = (data.params?.__nodeHeight as number) ?? MIN_ITERATOR_HEIGHT;
   const collapsed = (data.params?.__nodeCollapsed as boolean | undefined) ?? false;
   const shortId = id.slice(0, 8);
 
-  const inputDefs = data.inputDefinitions ?? [];
-  const outputDefs = data.outputDefinitions ?? [];
+  const inputDefs = useMemo(() => {
+    // Reconstruct from exposedInputs params (source of truth) to be resilient
+    // against data.inputDefinitions being reset by other state updates
+    try {
+      const raw = data.params?.exposedInputs;
+      const list: ExposedParam[] = typeof raw === "string" ? JSON.parse(raw) : Array.isArray(raw) ? raw : [];
+      return list.map((ep): PortDefinition => {
+        const readableParam = ep.paramKey.split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+        const shortLabel = ep.subNodeLabel.includes("/") ? ep.subNodeLabel.split("/").pop()! : ep.subNodeLabel;
+        return { key: ep.namespacedKey, label: `${readableParam} · ${shortLabel}`, dataType: ep.dataType, required: false };
+      });
+    } catch { return data.inputDefinitions ?? []; }
+  }, [data.params?.exposedInputs, data.inputDefinitions]);
+
+  const outputDefs = useMemo(() => {
+    try {
+      const raw = data.params?.exposedOutputs;
+      const list: ExposedParam[] = typeof raw === "string" ? JSON.parse(raw) : Array.isArray(raw) ? raw : [];
+      return list.map((ep): PortDefinition => {
+        const readableParam = ep.paramKey.split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+        const shortLabel = ep.subNodeLabel.includes("/") ? ep.subNodeLabel.split("/").pop()! : ep.subNodeLabel;
+        return { key: ep.namespacedKey, label: `${readableParam} · ${shortLabel}`, dataType: ep.dataType, required: false };
+      });
+    } catch { return data.outputDefinitions ?? []; }
+  }, [data.params?.exposedOutputs, data.outputDefinitions]);
   const childNodeIds = data.childNodeIds ?? [];
   const hasChildren = childNodeIds.length > 0;
+
+  /* ── Force ReactFlow to recalculate handle positions when ports change ── */
+  const portFingerprint = useMemo(
+    () => inputDefs.map((d) => d.key).join(",") + "|" + outputDefs.map((d) => d.key).join(","),
+    [inputDefs, outputDefs],
+  );
+  useEffect(() => {
+    // After new handles render, tell ReactFlow to update its internal handle cache
+    requestAnimationFrame(() => updateNodeInternals(id));
+  }, [portFingerprint, id, updateNodeInternals]);
 
   /* ── Collapse toggle ───────────────────────────────────────────── */
   const setCollapsed = useCallback(
@@ -370,7 +363,7 @@ function IteratorNodeContainerComponent({
     [collapsed, setCollapsed],
   );
 
-  /* ── Effective size — uses saved dimensions (updated by updateBoundingBox) */
+  /* ── Effective size ─────────────────────────────────────────────── */
   const effectiveWidth = savedWidth;
   const effectiveHeight = collapsed ? TITLE_BAR_HEIGHT : savedHeight;
 
@@ -433,47 +426,103 @@ function IteratorNodeContainerComponent({
       const el = nodeRef.current; if (!el) return;
       setResizing(true);
       const startX = e.clientX, startY = e.clientY;
-      const startW = el.offsetWidth, startH = el.offsetHeight;
+      const startW = savedWidth;
+      const startH = savedHeight;
       const zoom = getViewport().zoom;
+
+      // Capture the starting position of the iterator node
+      const startPos = (() => {
+        const n = useWorkflowStore.getState().nodes.find((nd) => nd.id === id);
+        return n ? { ...n.position } : { x: 0, y: 0 };
+      })();
+
       const onMove = (ev: MouseEvent) => {
-        const dx = ev.clientX - startX, dy = ev.clientY - startY;
-        if (xDir !== 0) el.style.width = `${Math.max(MIN_ITERATOR_WIDTH, startW + dx * xDir)}px`;
-        if (yDir !== 0) el.style.height = `${Math.max(MIN_ITERATOR_HEIGHT, startH + dy * yDir)}px`;
+        const dx = (ev.clientX - startX) / zoom;
+        const dy = (ev.clientY - startY) / zoom;
+        const newW = xDir !== 0 ? Math.max(MIN_ITERATOR_WIDTH, startW + dx * xDir) : startW;
+        const newH = yDir !== 0 ? Math.max(MIN_ITERATOR_HEIGHT, startH + dy * yDir) : startH;
+        const newX = xDir === -1 ? startPos.x + (startW - newW) : startPos.x;
+        const newY = yDir === -1 ? startPos.y + (startH - newH) : startPos.y;
+
+        setNodes((nds) => nds.map((n) => {
+          if (n.id !== id) return n;
+          const p = { ...n.data.params, __nodeWidth: newW, __nodeHeight: newH };
+          return { ...n, position: { x: newX, y: newY }, data: { ...n.data, params: p } };
+        }));
       };
+
       const onUp = (ev: MouseEvent) => {
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
-        el.style.width = ""; el.style.height = "";
         setResizing(false);
-        const dx = ev.clientX - startX, dy = ev.clientY - startY;
-        const newW = xDir !== 0 ? Math.max(MIN_ITERATOR_WIDTH, startW + dx * xDir) : undefined;
-        const newH = yDir !== 0 ? Math.max(MIN_ITERATOR_HEIGHT, startH + dy * yDir) : undefined;
-        setNodes((nds) => nds.map((n) => {
-          if (n.id !== id) return n;
-          const pos = { ...n.position };
-          if (xDir === -1) pos.x += dx / zoom;
-          if (yDir === -1) pos.y += dy / zoom;
-          const p = { ...n.data.params };
-          if (newW !== undefined) p.__nodeWidth = newW;
-          if (newH !== undefined) p.__nodeHeight = newH;
-          return { ...n, position: pos, data: { ...n.data, params: p } };
-        }));
+
+        const dx = (ev.clientX - startX) / zoom;
+        const dy = (ev.clientY - startY) / zoom;
+        const finalW = xDir !== 0 ? Math.max(MIN_ITERATOR_WIDTH, startW + dx * xDir) : startW;
+        const finalH = yDir !== 0 ? Math.max(MIN_ITERATOR_HEIGHT, startH + dy * yDir) : startH;
+
         useWorkflowStore.setState({ isDirty: true });
+
+        // Re-clamp child nodes
+        const { nodes: currentNodes } = useWorkflowStore.getState();
+        const clampPad = 10;
+        const childUpdates: Array<{ nodeId: string; pos: { x: number; y: number } }> = [];
+        for (const cn of currentNodes) {
+          if (cn.parentNode !== id) continue;
+          const cw = (cn.data?.params?.__nodeWidth as number) ?? 300;
+          const ch = (cn.data?.params?.__nodeHeight as number) ?? 80;
+          const minCX = clampPad;
+          const maxCX = Math.max(minCX, finalW - cw - clampPad);
+          const minCY = TITLE_BAR_HEIGHT + clampPad;
+          const maxCY = Math.max(minCY, finalH - ch - clampPad - 40);
+          const cx = Math.min(Math.max(cn.position.x, minCX), maxCX);
+          const cy = Math.min(Math.max(cn.position.y, minCY), maxCY);
+          if (cx !== cn.position.x || cy !== cn.position.y) {
+            childUpdates.push({ nodeId: cn.id, pos: { x: cx, y: cy } });
+          }
+        }
+        if (childUpdates.length > 0) {
+          useWorkflowStore.setState((state) => ({
+            nodes: state.nodes.map((n) => {
+              const upd = childUpdates.find((u) => u.nodeId === n.id);
+              return upd ? { ...n, position: upd.pos } : n;
+            }),
+          }));
+        }
       };
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
     },
-    [id, getViewport, setNodes],
+    [id, getViewport, setNodes, savedWidth, savedHeight],
   );
 
-  /* ── Handle positions — aligned with port rows ─────────────────── */
-  const getHandleTop = (index: number) =>
-    TITLE_BAR_HEIGHT + PORT_HEADER_HEIGHT + PORT_ROW_HEIGHT * index + PORT_ROW_HEIGHT / 2;
+  /* ── Capsule vertical position ─────────────────────────────────── */
+  const getCapsuleTop = (index: number) =>
+    CAPSULE_TOP_OFFSET + index * (CAPSULE_HEIGHT + CAPSULE_GAP);
 
-  /* ── Port strip widths ─────────────────────────────────────────── */
-  const leftStripWidth = inputDefs.length > 0 ? PORT_STRIP_WIDTH : PORT_STRIP_EMPTY_WIDTH;
-  const rightStripWidth = outputDefs.length > 0 ? PORT_STRIP_WIDTH : PORT_STRIP_EMPTY_WIDTH;
-  const contentHeight = effectiveHeight - TITLE_BAR_HEIGHT;
+  /* ── Exposed param lookup — maps namespacedKey → ExposedParam for tooltip info ── */
+  const exposedParamMap = useMemo(() => {
+    const map = new Map<string, ExposedParam>();
+    for (const key of ["exposedInputs", "exposedOutputs"] as const) {
+      try {
+        const raw = data.params?.[key];
+        const list: ExposedParam[] = typeof raw === "string" ? JSON.parse(raw) : Array.isArray(raw) ? raw : [];
+        for (const ep of list) map.set(ep.namespacedKey, ep);
+      } catch { /* ignore */ }
+    }
+    return map;
+  }, [data.params]);
+
+  /* ── Check if a handle has a connected edge ────────────────────── */
+  const isHandleConnected = useCallback(
+    (handleId: string, type: "source" | "target") =>
+      edges.some((e) =>
+        type === "source"
+          ? e.source === id && e.sourceHandle === handleId
+          : e.target === id && e.targetHandle === handleId,
+      ),
+    [edges, id],
+  );
 
   /* ── Picker toggle helpers ─────────────────────────────────────── */
   const toggleInputPicker = useCallback((e: React.MouseEvent) => {
@@ -559,7 +608,7 @@ function IteratorNodeContainerComponent({
           <span className="text-[10px] text-[hsl(var(--muted-foreground))] opacity-50 font-mono flex-shrink-0">{shortId}</span>
           <div className="flex-1" />
 
-          {/* ── Config buttons: Input / Output — always in title bar ── */}
+          {/* ── Config buttons: IN / OUT ── */}
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button onClick={toggleInputPicker}
@@ -587,21 +636,67 @@ function IteratorNodeContainerComponent({
             <TooltipContent side="bottom">{t("workflow.configureOutputs", "Configure exposed output parameters")}</TooltipContent>
           </Tooltip>
 
-          {/* ── Iteration count badge ── */}
-          <div className="flex-shrink-0 ml-1">
-            {editingCount ? (
-              <input ref={countInputRef} type="number" min={1} value={countDraft}
-                onChange={(e) => setCountDraft(e.target.value)} onBlur={commitCount} onKeyDown={onCountKeyDown}
-                className="nodrag nopan w-14 h-6 text-center text-[11px] font-medium rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 outline-none focus:ring-1 focus:ring-cyan-500/50" />
-            ) : (
-              <button onClick={startEditingCount} className="nodrag nopan h-6 px-2.5 rounded-full text-[11px] font-medium text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-transparent hover:border-cyan-500/30 transition-colors cursor-pointer" title={t("workflow.editIterationCount", "Click to edit iteration count")}>
-                ×{iterationCount}
-              </button>
-            )}
-          </div>
+          {/* ── Unified iteration mode + count capsule ── */}
+          <Tooltip delayDuration={0}>
+            <TooltipTrigger asChild>
+              <div className={`nodrag nopan flex-shrink-0 ml-1 flex items-center h-7 rounded-full border overflow-hidden transition-all cursor-pointer select-none ${
+                iterationMode === "auto"
+                  ? "bg-gradient-to-r from-violet-500/15 to-amber-500/15 border-violet-500/30"
+                  : "bg-cyan-500/8 border-cyan-500/20 hover:border-cyan-500/40"
+              }`}>
+                {/* Left half: mode toggle */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const newMode = iterationMode === "fixed" ? "auto" : "fixed";
+                    updateNodeParams(id, { ...data.params, iterationMode: newMode });
+                  }}
+                  className={`nodrag nopan flex items-center gap-1 px-2 h-full text-[10px] font-semibold tracking-wide uppercase transition-colors ${
+                    iterationMode === "auto"
+                      ? "text-violet-400 hover:bg-violet-500/15"
+                      : "text-cyan-400/70 hover:bg-cyan-500/10"
+                  }`}
+                >
+                  {iterationMode === "auto" ? (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="flex-shrink-0">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                  ) : (
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                      <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                      <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                    </svg>
+                  )}
+                  {iterationMode === "auto" ? "Auto" : "Fixed"}
+                </button>
+                {/* Divider + count — only in fixed mode */}
+                {iterationMode === "fixed" && (
+                  <>
+                    <div className="w-px h-3.5 bg-cyan-500/20" />
+                    {editingCount ? (
+                      <input ref={countInputRef} type="number" min={1} value={countDraft}
+                        onChange={(e) => setCountDraft(e.target.value)} onBlur={commitCount} onKeyDown={onCountKeyDown}
+                        className="nodrag nopan w-10 h-full text-center text-[11px] font-bold bg-transparent text-cyan-400 outline-none" />
+                    ) : (
+                      <button onClick={startEditingCount}
+                        className="nodrag nopan flex items-center justify-center px-2 h-full text-[12px] font-bold text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                        title={t("workflow.editIterationCount", "Click to edit iteration count")}>
+                        ×{iterationCount}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+              {iterationMode === "auto"
+                ? t("workflow.iterationModeAutoTip", "Auto: iterations = longest array input. Click the mode to switch.")
+                : t("workflow.iterationModeFixedTip", "Fixed: runs exactly ×N times. Click the mode to switch.")}
+            </TooltipContent>
+          </Tooltip>
         </div>
 
-        {/* ── Expose-param pickers — rendered via portal to sit above child nodes ── */}
+        {/* ── Expose-param pickers — rendered via portal ── */}
         {showInputPicker && createPortal(
           <PickerPortal nodeRef={nodeRef} side="left" offsetTop={TITLE_BAR_HEIGHT + 4}>
             <ExposeParamPicker iteratorId={id} direction="input" onClose={() => setShowInputPicker(false)} />
@@ -648,77 +743,40 @@ function IteratorNodeContainerComponent({
           </div>
         )}
 
-        {/* ── Body: Left port strip | Internal area | Right port strip ── */}
+        {/* ── Body: Internal canvas area (full width, no port strips) ── */}
         {!collapsed && (
-          <div className="flex" style={{ height: contentHeight }}>
-
-            {/* ── Left strip: exposed inputs ──────────────────── */}
-            <div className="flex-shrink-0 flex flex-col border-r border-dashed border-[hsl(var(--border)/0.3)]"
-              style={{ width: leftStripWidth }}>
-              {inputDefs.length > 0 ? (
-                <>
-                  <div className="flex items-center px-2 border-b border-dashed border-[hsl(var(--border)/0.2)]"
-                    style={{ height: PORT_HEADER_HEIGHT }}>
-                    <span className="text-[9px] text-cyan-400/60 uppercase tracking-wider font-semibold">
-                      {t("workflow.inputs", "IN")}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    {inputDefs.map((port) => (
-                      <div key={`il-${port.key}`}
-                        className="flex items-center gap-1.5 px-2 hover:bg-cyan-500/5 transition-colors"
-                        style={{ height: PORT_ROW_HEIGHT }}>
-                        <span className="text-[11px] text-foreground/80 truncate flex-1" title={port.label}>{port.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1" />
-              )}
-            </div>
-
-            {/* ── Internal canvas area ────────────────────────── */}
-            <div className="flex-1 relative min-w-0">
-              {/* Empty state — arrow pointing down to Add Node button */}
-              {!hasChildren && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
-                  <div className="flex flex-col items-center gap-3 opacity-40">
-                    <span className="text-[11px] text-muted-foreground">{t("workflow.iteratorEmpty", "No child nodes yet")}</span>
-                    <svg width="20" height="32" viewBox="0 0 20 32" fill="none" className="text-cyan-500/60">
-                      <path d="M10 0 L10 24 M4 18 L10 26 L16 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
+          <div className="relative" style={{ height: effectiveHeight - TITLE_BAR_HEIGHT }}>
+            {/* Empty state */}
+            {!hasChildren && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-12">
+                <div className="flex flex-col items-center gap-3 opacity-40">
+                  <span className="text-[11px] text-muted-foreground">{t("workflow.iteratorEmpty", "No child nodes yet")}</span>
+                  <svg width="20" height="32" viewBox="0 0 20 32" fill="none" className="text-cyan-500/60">
+                    <path d="M10 0 L10 24 M4 18 L10 26 L16 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* ── Right strip: exposed outputs ────────────────── */}
-            <div className="flex-shrink-0 flex flex-col border-l border-dashed border-[hsl(var(--border)/0.3)]"
-              style={{ width: rightStripWidth }}>
-              {outputDefs.length > 0 ? (
-                <>
-                  <div className="flex items-center justify-end px-2 border-b border-dashed border-[hsl(var(--border)/0.2)]"
-                    style={{ height: PORT_HEADER_HEIGHT }}>
-                    <span className="text-[9px] text-cyan-400/60 uppercase tracking-wider font-semibold">
-                      {t("workflow.outputs", "OUT")}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    {outputDefs.map((port) => (
-                      <div key={`or-${port.key}`}
-                        className="flex items-center gap-1.5 px-2 hover:bg-cyan-500/5 transition-colors justify-end"
-                        style={{ height: PORT_ROW_HEIGHT }}>
-                        <span className="text-[11px] text-foreground/80 truncate flex-1 text-right" title={port.label}>{port.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <div className="flex-1" />
-              )}
+            {/* ── Add Node button — positioned at bottom center inside the container ── */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 z-[60]"
+              style={{ bottom: 10 }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={handleAddNodeInside}
+                className="nodrag nopan flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-medium
+                  bg-cyan-500/10 text-cyan-400 border border-cyan-500/20
+                  hover:bg-cyan-500/20 hover:border-cyan-500/40 transition-all cursor-pointer shadow-sm backdrop-blur-sm"
+                title={t("workflow.addNodeInside", "Add node inside Iterator")}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                {t("workflow.addNode", "Add Node")}
+              </button>
             </div>
-
           </div>
         )}
 
@@ -744,37 +802,147 @@ function IteratorNodeContainerComponent({
         )}
       </div>
 
-      {/* ── Add Node button — portal to sit above ReactFlow child nodes ── */}
-      {!collapsed && createPortal(
-        <AddNodePortal nodeRef={nodeRef} onClick={handleAddNodeInside} label={t("workflow.addNode", "Add Node")} title={t("workflow.addNodeInside", "Add node inside Iterator")} />,
-        document.body,
-      )}
+      {/* ── LEFT SIDE: exposed input capsules ──────────────────── */}
+      {!collapsed && inputDefs.map((port, i) => {
+        const top = getCapsuleTop(i);
+        const extHandleId = `input-${port.key}`;
+        const intHandleId = `input-inner-${port.key}`;
+        const extConnected = isHandleConnected(extHandleId, "target");
+        const intConnected = isHandleConnected(intHandleId, "source");
+        const ep = exposedParamMap.get(port.key);
+        const tooltipText = ep
+          ? `${ep.paramKey.split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} — ${ep.subNodeLabel}`
+          : port.label;
+        return (
+          <React.Fragment key={`cap-in-${port.key}`}>
+            {/* External target handle — on the left border */}
+            <Handle
+              type="target"
+              position={Position.Left}
+              id={extHandleId}
+              style={{
+                ...dotStyle(extConnected),
+                position: "absolute",
+                top: top + CAPSULE_HEIGHT / 2,
+                left: -HANDLE_DOT / 2,
+                transform: "translateY(-50%)",
+              }}
+            />
+            {/* Capsule label between the two dots */}
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <div
+                  className="absolute pointer-events-auto flex items-center"
+                  style={{
+                    top: top,
+                    left: HANDLE_DOT,
+                    width: CAPSULE_LABEL_WIDTH,
+                    height: CAPSULE_HEIGHT,
+                    zIndex: 45,
+                  }}
+                >
+                  <div className="rounded-full bg-[hsl(var(--card))] border border-cyan-500/40 px-2.5 flex items-center w-full"
+                    style={{ height: CAPSULE_HEIGHT - 4 }}>
+                    <span className="text-[11px] text-foreground font-medium whitespace-nowrap select-none truncate">
+                      {port.label}
+                    </span>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {tooltipText}
+              </TooltipContent>
+            </Tooltip>
+            {/* Internal source handle — right side of capsule label area */}
+            <Handle
+              type="source"
+              position={Position.Right}
+              id={intHandleId}
+              style={{
+                ...dotStyle(intConnected),
+                position: "absolute",
+                top: top + CAPSULE_HEIGHT / 2,
+                left: HANDLE_DOT + CAPSULE_LABEL_WIDTH + 4,
+                transform: "translateY(-50%)",
+              }}
+            />
+          </React.Fragment>
+        );
+      })}
 
-      {/* ── Input handles (left border — external connections) ──── */}
-      {!collapsed && inputDefs.map((port, i) => (
-        <Handle
-          key={`input-${port.key}`}
-          type="target"
-          position={Position.Left}
-          id={`input-${port.key}`}
-          style={{ ...handleLeft(false), top: getHandleTop(i) }}
-          title={port.label}
-        />
-      ))}
+      {/* ── RIGHT SIDE: exposed output capsules ──────────────────── */}
+      {!collapsed && outputDefs.map((port, i) => {
+        const top = getCapsuleTop(i);
+        const intHandleId = `output-inner-${port.key}`;
+        const extHandleId = `output-${port.key}`;
+        const extConnected = isHandleConnected(extHandleId, "source");
+        const intConnected = isHandleConnected(intHandleId, "target");
+        const ep = exposedParamMap.get(port.key);
+        const tooltipText = ep
+          ? `${ep.paramKey.split("_").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} — ${ep.subNodeLabel}`
+          : port.label;
+        // Compute left-based positions so ReactFlow handle lookup is reliable
+        const capsuleLabelLeft = effectiveWidth - HANDLE_DOT - CAPSULE_LABEL_WIDTH;
+        const intHandleLeft = capsuleLabelLeft - HANDLE_DOT - 4;
+        const extHandleLeft = effectiveWidth - HANDLE_DOT / 2;
+        return (
+          <React.Fragment key={`cap-out-${port.key}`}>
+            {/* Internal target handle — left side of capsule */}
+            <Handle
+              type="target"
+              position={Position.Left}
+              id={intHandleId}
+              style={{
+                ...dotStyle(intConnected),
+                position: "absolute",
+                top: top + CAPSULE_HEIGHT / 2,
+                left: intHandleLeft,
+                transform: "translateY(-50%)",
+              }}
+            />
+            {/* Capsule label */}
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <div
+                  className="absolute pointer-events-auto flex items-center justify-end"
+                  style={{
+                    top: top,
+                    left: capsuleLabelLeft,
+                    width: CAPSULE_LABEL_WIDTH,
+                    height: CAPSULE_HEIGHT,
+                    zIndex: 45,
+                  }}
+                >
+                  <div className="rounded-full bg-[hsl(var(--card))] border border-cyan-500/40 px-2.5 flex items-center justify-end w-full"
+                    style={{ height: CAPSULE_HEIGHT - 4 }}>
+                    <span className="text-[11px] text-foreground font-medium whitespace-nowrap select-none truncate text-right">
+                      {port.label}
+                    </span>
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {tooltipText}
+              </TooltipContent>
+            </Tooltip>
+            {/* External source handle — on the right border */}
+            <Handle
+              type="source"
+              position={Position.Right}
+              id={extHandleId}
+              style={{
+                ...dotStyle(extConnected),
+                position: "absolute",
+                top: top + CAPSULE_HEIGHT / 2,
+                left: extHandleLeft,
+                transform: "translateY(-50%)",
+              }}
+            />
+          </React.Fragment>
+        );
+      })}
 
-      {/* ── Output handles (right border — external connections) ── */}
-      {!collapsed && outputDefs.map((port, i) => (
-        <Handle
-          key={`output-${port.key}`}
-          type="source"
-          position={Position.Right}
-          id={`output-${port.key}`}
-          style={{ ...handleRight(), top: getHandleTop(i) }}
-          title={port.label}
-        />
-      ))}
-
-      {/* ── External "+" button — right side, for downstream nodes ── */}
+      {/* ── External "+" button — right side ── */}
       {(hovered || selected) && (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>

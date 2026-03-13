@@ -23,7 +23,111 @@ import { wouldCreateCycleInSubWorkflow } from "@/workflow/lib/cycle-detection";
 const MIN_ITERATOR_WIDTH = 600;
 const MIN_ITERATOR_HEIGHT = 400;
 const CHILD_PADDING = 40;
-const PORT_STRIP_WIDTH = 140;
+
+/**
+ * Purge exposed params (and their port definitions + connected edges) from
+ * iterator nodes when child nodes are removed or released.
+ * Returns updated nodes and edges arrays.
+ */
+function purgeExposedParamsForChildren(
+  removedChildIds: Set<string>,
+  nodes: ReactFlowNode[],
+  edges: ReactFlowEdge[],
+): { nodes: ReactFlowNode[]; edges: ReactFlowEdge[] } {
+  // Find all iterator nodes that reference any of the removed children
+  const iteratorNodes = nodes.filter(
+    (n) => n.data.nodeType === "control/iterator",
+  );
+  if (iteratorNodes.length === 0) return { nodes, edges };
+
+  let updatedNodes = nodes;
+  let updatedEdges = edges;
+
+  for (const iter of iteratorNodes) {
+    const params = iter.data.params ?? {};
+    let dirty = false;
+
+    for (const direction of ["input", "output"] as const) {
+      const paramListKey = direction === "input" ? "exposedInputs" : "exposedOutputs";
+      const defKey = direction === "input" ? "inputDefinitions" : "outputDefinitions";
+
+      const currentList: ExposedParam[] = (() => {
+        try {
+          const raw = params[paramListKey];
+          return typeof raw === "string" ? JSON.parse(raw) : Array.isArray(raw) ? raw : [];
+        } catch {
+          return [];
+        }
+      })();
+
+      const filtered = currentList.filter((p) => !removedChildIds.has(p.subNodeId));
+      if (filtered.length === currentList.length) continue; // nothing to remove
+      dirty = true;
+
+      // Keys to remove
+      const removedKeys = new Set(
+        currentList.filter((p) => removedChildIds.has(p.subNodeId)).map((p) => p.namespacedKey),
+      );
+
+      // Remove port definitions
+      const currentDefs: PortDefinition[] = iter.data[defKey] ?? [];
+      const filteredDefs = currentDefs.filter((d) => !removedKeys.has(d.key));
+
+      // Remove connected edges (both external and internal handles + auto-edges)
+      const extHandleIds = new Set<string>();
+      const intHandleIds = new Set<string>();
+      const autoEdgeIds = new Set<string>();
+      for (const k of removedKeys) {
+        if (direction === "input") {
+          extHandleIds.add(`input-${k}`);
+          intHandleIds.add(`input-inner-${k}`);
+        } else {
+          extHandleIds.add(`output-${k}`);
+          intHandleIds.add(`output-inner-${k}`);
+        }
+        autoEdgeIds.add(`iter-auto-${iter.id}-${k}`);
+      }
+      updatedEdges = updatedEdges.filter((e) => {
+        if (autoEdgeIds.has(e.id)) return false;
+        if (direction === "input") {
+          if (e.target === iter.id && extHandleIds.has(e.targetHandle ?? "")) return false;
+          if (e.source === iter.id && intHandleIds.has(e.sourceHandle ?? "")) return false;
+        } else {
+          if (e.source === iter.id && extHandleIds.has(e.sourceHandle ?? "")) return false;
+          if (e.target === iter.id && intHandleIds.has(e.targetHandle ?? "")) return false;
+        }
+        return true;
+      });
+
+      // Update the iterator node
+      updatedNodes = updatedNodes.map((n) => {
+        if (n.id !== iter.id) return n;
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            params: { ...n.data.params, [paramListKey]: JSON.stringify(filtered) },
+            [defKey]: filteredDefs,
+          },
+        };
+      });
+    }
+
+    // Also clean up childNodeIds
+    if (dirty) {
+      const currentChildIds: string[] = iter.data.childNodeIds ?? [];
+      const filteredChildIds = currentChildIds.filter((id: string) => !removedChildIds.has(id));
+      if (filteredChildIds.length !== currentChildIds.length) {
+        updatedNodes = updatedNodes.map((n) => {
+          if (n.id !== iter.id) return n;
+          return { ...n, data: { ...n.data, childNodeIds: filteredChildIds } };
+        });
+      }
+    }
+  }
+
+  return { nodes: updatedNodes, edges: updatedEdges };
+}
 
 /** Lazy getter to avoid circular import with execution.store */
 function getActiveExecutions(): Set<string> {
@@ -297,6 +401,7 @@ export interface WorkflowState {
   updateBoundingBox: (iteratorId: string) => void;
   exposeParam: (iteratorId: string, param: ExposedParam) => void;
   unexposeParam: (iteratorId: string, namespacedKey: string, direction: "input" | "output") => void;
+  syncExposedParamsOnModelSwitch: (childNodeId: string, newLabel: string, newInputParamKeys: string[]) => void;
   reset: () => void;
 }
 
@@ -358,10 +463,23 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     }
     const { nodes, edges } = get();
     pushUndo({ nodes, edges });
-    set((state) => ({
-      nodes: state.nodes.filter((n) => n.id !== nodeId),
-      edges: state.edges.filter(
-        (e) => e.source !== nodeId && e.target !== nodeId,
+
+    // If this is an iterator, collect all child nodes to delete them too
+    const nodeToDelete = nodes.find((n) => n.id === nodeId);
+    const idsToRemove = new Set([nodeId]);
+    if (nodeToDelete?.data?.nodeType === "control/iterator") {
+      for (const n of nodes) {
+        if (n.parentNode === nodeId) idsToRemove.add(n.id);
+      }
+    }
+
+    // Purge exposed params from parent iterator if this is a child node
+    const purged = purgeExposedParamsForChildren(idsToRemove, nodes, edges);
+
+    set(() => ({
+      nodes: purged.nodes.filter((n) => !idsToRemove.has(n.id)),
+      edges: purged.edges.filter(
+        (e) => !idsToRemove.has(e.source) && !idsToRemove.has(e.target),
       ),
       isDirty: true,
       canUndo: true,
@@ -380,9 +498,23 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     const { nodes, edges } = get();
     pushUndo({ nodes, edges });
     const removeSet = new Set(nodeIds);
-    set((state) => ({
-      nodes: state.nodes.filter((n) => !removeSet.has(n.id)),
-      edges: state.edges.filter(
+
+    // If any iterator is being deleted, also delete its child nodes
+    for (const nid of nodeIds) {
+      const node = nodes.find((n) => n.id === nid);
+      if (node?.data?.nodeType === "control/iterator") {
+        for (const n of nodes) {
+          if (n.parentNode === nid) removeSet.add(n.id);
+        }
+      }
+    }
+
+    // Purge exposed params from parent iterators
+    const purged = purgeExposedParamsForChildren(removeSet, nodes, edges);
+
+    set(() => ({
+      nodes: purged.nodes.filter((n) => !removeSet.has(n.id)),
+      edges: purged.edges.filter(
         (e) => !removeSet.has(e.source) && !removeSet.has(e.target),
       ),
       isDirty: true,
@@ -970,21 +1102,17 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
     pushUndo({ nodes, edges });
 
+    // Purge exposed params for this child from the iterator
+    const purged = purgeExposedParamsForChildren(new Set([childId]), nodes, edges);
+
     // Convert child position back to absolute coordinates
     const absolutePosition = {
       x: childNode.position.x + iteratorNode.position.x,
       y: childNode.position.y + iteratorNode.position.y,
     };
 
-    // Remove from childNodeIds in iterator data
-    const currentChildIds: string[] =
-      iteratorNode.data.childNodeIds ?? [];
-    const updatedChildIds = currentChildIds.filter(
-      (id: string) => id !== childId,
-    );
-
-    set((state) => ({
-      nodes: state.nodes.map((n) => {
+    set(() => ({
+      nodes: purged.nodes.map((n) => {
         if (n.id === childId) {
           // Remove parentNode and extent by spreading without them
           const { parentNode: _, extent: _e, ...rest } = n;
@@ -994,17 +1122,9 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
             data: { ...n.data },
           };
         }
-        if (n.id === iteratorId) {
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              childNodeIds: updatedChildIds,
-            },
-          };
-        }
         return n;
       }),
+      edges: purged.edges,
       isDirty: true,
       canUndo: true,
       canRedo: false,
@@ -1044,7 +1164,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         if (right > maxRight) maxRight = right;
         if (bottom > maxBottom) maxBottom = bottom;
       }
-      requiredWidth = Math.max(MIN_ITERATOR_WIDTH, maxRight + PORT_STRIP_WIDTH);
+      requiredWidth = Math.max(MIN_ITERATOR_WIDTH, maxRight + CHILD_PADDING);
       requiredHeight = Math.max(MIN_ITERATOR_HEIGHT, maxBottom);
     }
 
@@ -1103,10 +1223,18 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
 
     const updatedList = [...currentList, param];
 
-    // Build new port definition
+    // Build new port definition — label shows "ParamName · NodeLabel"
+    const readableParam = param.paramKey
+      .split("_")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+    // Shorten the node label for display (e.g. "bytedance/seedream-v3" → "seedream-v3")
+    const shortNodeLabel = param.subNodeLabel.includes("/")
+      ? param.subNodeLabel.split("/").pop()!
+      : param.subNodeLabel;
     const newPort: PortDefinition = {
       key: param.namespacedKey,
-      label: param.namespacedKey,
+      label: `${readableParam} · ${shortNodeLabel}`,
       dataType: param.dataType,
       required: false,
     };
@@ -1114,6 +1242,42 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     const currentDefs: PortDefinition[] = iteratorNode.data[defKey] ?? [];
     const updatedDefs = [...currentDefs, newPort];
 
+    // Auto-create internal edge between capsule inner handle and child node handle
+    const autoEdgeId = `iter-auto-${iteratorId}-${param.namespacedKey}`;
+    let autoEdge: ReactFlowEdge | null = null;
+
+    if (param.direction === "input") {
+      // Capsule inner source → child node input
+      // The child node's input handle is either `input-{key}` or `param-{key}`
+      // For ai-task model schema fields, the handle is `param-{key}`
+      const childNode = nodes.find((n) => n.id === param.subNodeId);
+      const childInputDefs = (childNode?.data?.inputDefinitions ?? []) as PortDefinition[];
+      const hasInputPort = childInputDefs.some((d: PortDefinition) => d.key === param.paramKey);
+      const targetHandle = hasInputPort ? `input-${param.paramKey}` : `param-${param.paramKey}`;
+
+      autoEdge = {
+        id: autoEdgeId,
+        source: iteratorId,
+        sourceHandle: `input-inner-${param.namespacedKey}`,
+        target: param.subNodeId,
+        targetHandle,
+        type: "custom",
+        data: { isInternal: true },
+      };
+    } else {
+      // Child node output → capsule inner target
+      autoEdge = {
+        id: autoEdgeId,
+        source: param.subNodeId,
+        sourceHandle: param.paramKey,
+        target: iteratorId,
+        targetHandle: `output-inner-${param.namespacedKey}`,
+        type: "custom",
+        data: { isInternal: true },
+      };
+    }
+
+    // Update node definitions AND add auto-edge in a single state update
     set((state) => ({
       nodes: state.nodes.map((n) => {
         if (n.id === iteratorId) {
@@ -1131,6 +1295,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
         }
         return n;
       }),
+      edges: autoEdge ? [...state.edges, autoEdge] : state.edges,
       isDirty: true,
       canUndo: true,
       canRedo: false,
@@ -1168,17 +1333,31 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       (d: PortDefinition) => d.key !== namespacedKey,
     );
 
-    // Remove any connected edges to/from the handle
-    const handleId = direction === "input"
+    // Remove any connected edges to/from both external and internal handles
+    const extHandleId = direction === "input"
       ? `input-${namespacedKey}`
       : `output-${namespacedKey}`;
+    const intHandleId = direction === "input"
+      ? `input-inner-${namespacedKey}`
+      : `output-inner-${namespacedKey}`;
+    const autoEdgeId = `iter-auto-${iteratorId}-${namespacedKey}`;
 
-    const edgesToRemove = edges.filter((e) =>
-      direction === "input"
-        ? e.target === iteratorId && e.targetHandle === handleId
-        : e.source === iteratorId && e.sourceHandle === handleId,
-    );
-    const edgeIdsToRemove = new Set(edgesToRemove.map((e) => e.id));
+    const edgeIdsToRemove = new Set<string>();
+    edgeIdsToRemove.add(autoEdgeId); // auto-created internal edge
+
+    for (const e of edges) {
+      if (direction === "input") {
+        // External edges connecting to the external target handle
+        if (e.target === iteratorId && e.targetHandle === extHandleId) edgeIdsToRemove.add(e.id);
+        // Internal edges from the inner source handle
+        if (e.source === iteratorId && e.sourceHandle === intHandleId) edgeIdsToRemove.add(e.id);
+      } else {
+        // External edges from the external source handle
+        if (e.source === iteratorId && e.sourceHandle === extHandleId) edgeIdsToRemove.add(e.id);
+        // Internal edges to the inner target handle
+        if (e.target === iteratorId && e.targetHandle === intHandleId) edgeIdsToRemove.add(e.id);
+      }
+    }
 
     set((state) => ({
       nodes: state.nodes.map((n) => {
@@ -1204,6 +1383,151 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       canUndo: true,
       canRedo: false,
     }));
+  },
+
+  /**
+   * Sync exposed params when a child node inside an iterator switches models.
+   *
+   * Scenarios handled:
+   * 1. Label changed → update subNodeLabel + namespacedKey in all exposed params & edges
+   * 2. Input param removed by new model → remove that exposed input + auto-edge + external edges
+   * 3. Input param still exists in new model → keep it, update label
+   * 4. Output always exists (key="output") → keep it, update label with new model name
+   * 5. Multiple child nodes in same iterator → only affect the switched node's params
+   */
+  syncExposedParamsOnModelSwitch: (childNodeId, newLabel, newInputParamKeys) => {
+    const { nodes, edges } = get();
+    const childNode = nodes.find((n) => n.id === childNodeId);
+    if (!childNode?.parentNode) return; // not inside an iterator
+
+    const iteratorId = childNode.parentNode;
+    const iteratorNode = nodes.find((n) => n.id === iteratorId);
+    if (!iteratorNode || iteratorNode.data.nodeType !== "control/iterator") return;
+
+    const params = iteratorNode.data.params ?? {};
+    const newInputKeySet = new Set(newInputParamKeys);
+    let updatedNodes = nodes;
+    let updatedEdges = edges;
+    let dirty = false;
+
+    for (const direction of ["input", "output"] as const) {
+      const paramListKey = direction === "input" ? "exposedInputs" : "exposedOutputs";
+      const defKey = direction === "input" ? "inputDefinitions" : "outputDefinitions";
+
+      const currentList: ExposedParam[] = (() => {
+        try {
+          const raw = params[paramListKey];
+          return typeof raw === "string" ? JSON.parse(raw) : Array.isArray(raw) ? raw : [];
+        } catch { return []; }
+      })();
+
+      // Only process params belonging to this child node
+      const mine = currentList.filter((p) => p.subNodeId === childNodeId);
+      const others = currentList.filter((p) => p.subNodeId !== childNodeId);
+      if (mine.length === 0) continue;
+
+      const kept: ExposedParam[] = [];
+      const removedKeys = new Set<string>();
+
+      for (const ep of mine) {
+        if (direction === "input" && !newInputKeySet.has(ep.paramKey)) {
+          // Input param no longer exists in new model → remove
+          removedKeys.add(ep.namespacedKey);
+        } else {
+          // Param still valid → update label and namespacedKey
+          const oldNk = ep.namespacedKey;
+          const newNk = `${newLabel}.${ep.paramKey}`;
+          const updated: ExposedParam = { ...ep, subNodeLabel: newLabel, namespacedKey: newNk };
+          kept.push(updated);
+
+          if (oldNk !== newNk) {
+            // Rename handle IDs in edges
+            const oldAutoId = `iter-auto-${iteratorId}-${oldNk}`;
+            const newAutoId = `iter-auto-${iteratorId}-${newNk}`;
+            updatedEdges = updatedEdges.map((e) => {
+              if (e.id === oldAutoId) {
+                if (direction === "input") {
+                  return { ...e, id: newAutoId, sourceHandle: `input-inner-${newNk}` };
+                } else {
+                  return { ...e, id: newAutoId, targetHandle: `output-inner-${newNk}` };
+                }
+              }
+              // Update external edges referencing old handle IDs
+              if (direction === "input") {
+                if (e.target === iteratorId && e.targetHandle === `input-${oldNk}`) {
+                  return { ...e, targetHandle: `input-${newNk}` };
+                }
+                if (e.source === iteratorId && e.sourceHandle === `input-inner-${oldNk}`) {
+                  return { ...e, sourceHandle: `input-inner-${newNk}` };
+                }
+              } else {
+                if (e.source === iteratorId && e.sourceHandle === `output-${oldNk}`) {
+                  return { ...e, sourceHandle: `output-${newNk}` };
+                }
+                if (e.target === iteratorId && e.targetHandle === `output-inner-${oldNk}`) {
+                  return { ...e, targetHandle: `output-inner-${newNk}` };
+                }
+              }
+              return e;
+            });
+          }
+        }
+      }
+
+      // Remove edges for removed params
+      if (removedKeys.size > 0) {
+        const removeHandles = new Set<string>();
+        const removeAutoIds = new Set<string>();
+        for (const k of removedKeys) {
+          removeAutoIds.add(`iter-auto-${iteratorId}-${k}`);
+          if (direction === "input") {
+            removeHandles.add(`input-${k}`);
+            removeHandles.add(`input-inner-${k}`);
+          } else {
+            removeHandles.add(`output-${k}`);
+            removeHandles.add(`output-inner-${k}`);
+          }
+        }
+        updatedEdges = updatedEdges.filter((e) => {
+          if (removeAutoIds.has(e.id)) return false;
+          if (direction === "input") {
+            if (e.target === iteratorId && removeHandles.has(e.targetHandle ?? "")) return false;
+            if (e.source === iteratorId && removeHandles.has(e.sourceHandle ?? "")) return false;
+          } else {
+            if (e.source === iteratorId && removeHandles.has(e.sourceHandle ?? "")) return false;
+            if (e.target === iteratorId && removeHandles.has(e.targetHandle ?? "")) return false;
+          }
+          return true;
+        });
+      }
+
+      const updatedList = [...others, ...kept];
+      const currentDefs: PortDefinition[] = iteratorNode.data[defKey] ?? [];
+      // Rebuild defs: keep others' defs, rebuild this child's defs from kept params
+      const otherDefs = currentDefs.filter((d) => !mine.some((m) => m.namespacedKey === d.key));
+      const keptDefs = kept.map((ep): PortDefinition => {
+        const readableParam = ep.paramKey.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+        const shortLabel = ep.subNodeLabel.includes("/") ? ep.subNodeLabel.split("/").pop()! : ep.subNodeLabel;
+        return { key: ep.namespacedKey, label: `${readableParam} · ${shortLabel}`, dataType: ep.dataType, required: false };
+      });
+
+      updatedNodes = updatedNodes.map((n) => {
+        if (n.id !== iteratorId) return n;
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            params: { ...n.data.params, [paramListKey]: JSON.stringify(updatedList) },
+            [defKey]: [...otherDefs, ...keptDefs],
+          },
+        };
+      });
+      dirty = true;
+    }
+
+    if (dirty) {
+      set({ nodes: updatedNodes, edges: updatedEdges, isDirty: true });
+    }
   },
 
   reset: () => {

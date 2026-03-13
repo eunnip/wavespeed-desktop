@@ -31,6 +31,7 @@ const nodeDefMap = new Map(BROWSER_NODE_DEFINITIONS.map((d) => [d.type, d]));
 
 export interface BrowserNode {
   id: string;
+  parentNode?: string;
   data: { nodeType: string; params?: Record<string, unknown> };
 }
 
@@ -391,20 +392,56 @@ export async function executeWorkflowInBrowser(
     filteredNodes = nodes;
     filteredEdges = edges;
   }
+
+  // Ensure child nodes of any iterator in the graph are always included
+  const iteratorIds = new Set(filteredNodes.filter((n) => n.data.nodeType === "control/iterator").map((n) => n.id));
+  if (iteratorIds.size > 0) {
+    const filteredIdSet = new Set(filteredNodes.map((n) => n.id));
+    for (const n of nodes) {
+      if (n.parentNode && iteratorIds.has(n.parentNode) && !filteredIdSet.has(n.id)) {
+        filteredNodes.push(n);
+        nodeIds.push(n.id);
+        filteredIdSet.add(n.id);
+      }
+    }
+    // Include internal edges between child nodes
+    const allFilteredIds = new Set(filteredNodes.map((n) => n.id));
+    for (const e of edges) {
+      if (allFilteredIds.has(e.source) && allFilteredIds.has(e.target)) {
+        if (!filteredEdges.some((fe) => fe.source === e.source && fe.target === e.target && fe.sourceHandle === e.sourceHandle && fe.targetHandle === e.targetHandle)) {
+          filteredEdges.push(e);
+        }
+      }
+    }
+  }
+
   const nodeMap = new Map(filteredNodes.map((n) => [n.id, n]));
+
+  // Filter out child nodes (nodes with parentNode) from top-level execution.
+  // They are only executed inside their parent iterator's handler.
+  const childNodeIds = new Set(filteredNodes.filter((n) => n.parentNode).map((n) => n.id));
+  const topLevelNodeIds = nodeIds.filter((id) => !childNodeIds.has(id));
+
   const edgesWithHandles = filteredEdges.map((e) => ({
     source: e.source,
     target: e.target,
     sourceHandle: e.sourceHandle ?? "output",
     targetHandle: e.targetHandle ?? "input",
   }));
-  const simpleEdgesSubgraph: SimpleEdge[] = filteredEdges.map((e) => ({
-    sourceNodeId: e.source,
-    targetNodeId: e.target,
-  }));
+
+  // Top-level simple edges: exclude edges involving child nodes (internal to iterators)
+  // Critical: edges FROM child nodes to iterator (exposed output auto-edges) would
+  // incorrectly increment the iterator's in-degree in topological sort, preventing it
+  // from ever executing. We must exclude any edge where source OR target is a child node.
+  const simpleEdgesSubgraph: SimpleEdge[] = edgesWithHandles
+    .filter((e) => !childNodeIds.has(e.source) && !childNodeIds.has(e.target))
+    .map((e) => ({
+      sourceNodeId: e.source,
+      targetNodeId: e.target,
+    }));
   const results = new Map<string, NodeResult>();
   const failedNodes = new Set<string>();
-  const levels = topologicalLevels(nodeIds, simpleEdgesSubgraph);
+  const levels = topologicalLevels(topLevelNodeIds, simpleEdgesSubgraph);
   const upstreamMap = new Map<string, string[]>();
   for (const e of simpleEdgesSubgraph) {
     const deps = upstreamMap.get(e.targetNodeId) ?? [];
@@ -416,6 +453,9 @@ export async function executeWorkflowInBrowser(
     throwIfAborted();
     // Stop the entire workflow if any node has failed
     if (failedNodes.size > 0) break;
+    // Yield to the event loop between levels so React can flush UI updates
+    // (prevents perceived "freeze" between e.g. directory-import completing and iterator starting)
+    await new Promise<void>((r) => setTimeout(r, 0));
     await Promise.all(
       level.map(async (nodeId) => {
         throwIfAborted();
@@ -578,6 +618,54 @@ export async function executeWorkflowInBrowser(
             return;
           }
 
+          if (nodeType === "input/directory-import") {
+            const dirPath = String(params.directoryPath ?? "").trim();
+            if (!dirPath) throw new Error("No directory selected. Please choose a directory.");
+
+            const mediaType = String(params.mediaType ?? "image");
+
+            const MEDIA_EXTS: Record<string, string[]> = {
+              image: [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tiff", ".tif", ".svg", ".avif"],
+              video: [".mp4", ".webm", ".mov", ".avi", ".mkv", ".flv", ".wmv", ".m4v"],
+              audio: [".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac", ".wma"],
+              all: [],
+            };
+            MEDIA_EXTS.all = [...MEDIA_EXTS.image, ...MEDIA_EXTS.video, ...MEDIA_EXTS.audio];
+
+            let urls: string[] = [];
+            try {
+              const api = (window as unknown as Record<string, unknown>).electronAPI as
+                | { scanDirectory?: (path: string, exts: string[]) => Promise<string[]> }
+                | undefined;
+              if (api?.scanDirectory) {
+                const files = await api.scanDirectory(dirPath, MEDIA_EXTS[mediaType] ?? MEDIA_EXTS.all);
+                // Convert raw file paths to local-asset:// URLs (consistent with electron handler)
+                urls = files.sort().map((f) => `local-asset://${encodeURIComponent(f)}`);
+              } else {
+                throw new Error("Directory scanning requires the desktop app.");
+              }
+            } catch (err) {
+              throw new Error(`Failed to scan directory: ${err instanceof Error ? err.message : String(err)}`);
+            }
+
+            results.set(nodeId, {
+              outputUrl: urls[0] ?? "",
+              resultMetadata: {
+                output: urls,
+                resultUrl: urls[0] ?? "",
+                resultUrls: urls,
+                fileCount: urls.length,
+              },
+            });
+            callbacks.onNodeStatus(nodeId, "confirmed");
+            callbacks.onNodeComplete(nodeId, {
+              urls: urls.length > 0 ? urls : [""],
+              cost: 0,
+              durationMs: Date.now() - start,
+            });
+            return;
+          }
+
           if (nodeType === "output/preview") {
             const url = String(inputs.input ?? "");
             if (!url) throw new Error("No URL provided for preview.");
@@ -595,63 +683,74 @@ export async function executeWorkflowInBrowser(
           }
 
           if (nodeType === "output/file") {
-            const url = String(inputs.url ?? inputs.input ?? "");
-            if (!url) throw new Error("No URL provided for export.");
+            const rawUrl = inputs.url ?? inputs.input ?? "";
+            // Handle array inputs (e.g. from iterator output) — save all files
+            const urlList: string[] = Array.isArray(rawUrl)
+              ? rawUrl.map(String).filter(Boolean)
+              : [String(rawUrl)].filter(Boolean);
+            if (urlList.length === 0) throw new Error("No URL provided for export.");
+
             const filenamePrefix =
               String(params.filename ?? "output").replace(
                 /[<>:"/\\|?*]/g,
                 "_",
               ) || "output";
             const format = String(params.format ?? "auto");
-            const ext =
-              format === "auto"
-                ? guessExtFromUrl(url)
-                : format.replace(/^\./, "").toLowerCase();
-            const fileName = `${filenamePrefix}_${Date.now()}.${ext || "png"}`;
-
             const isElectron =
               typeof window !== "undefined" &&
               !!window.electronAPI?.saveFileSilent;
-            if (isElectron) {
-              // Electron: save silently to outputDir via IPC (no dialog)
-              const outputDir = String(params.outputDir || "");
-              const result = await window.electronAPI!.saveFileSilent(
-                url,
-                outputDir,
-                fileName,
-              );
-              if (!result.success)
-                throw new Error(result.error || "Save failed");
-            } else {
-              // Browser: download via <a download> + blob
-              try {
-                const resp = await fetch(url);
-                if (!resp.ok)
-                  throw new Error(`Download failed: HTTP ${resp.status}`);
-                const blob = await resp.blob();
-                const blobUrl = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = blobUrl;
-                a.download = fileName;
-                a.style.display = "none";
-                document.body.appendChild(a);
-                a.click();
-                setTimeout(() => {
-                  document.body.removeChild(a);
-                  URL.revokeObjectURL(blobUrl);
-                }, 100);
-              } catch {
-                window.open(url, "_blank");
+            const savedFiles: string[] = [];
+
+            for (let fi = 0; fi < urlList.length; fi++) {
+              const url = urlList[fi];
+              const ext =
+                format === "auto"
+                  ? guessExtFromUrl(url)
+                  : format.replace(/^\./, "").toLowerCase();
+              const suffix = urlList.length > 1 ? `_${fi + 1}` : "";
+              const fileName = `${filenamePrefix}${suffix}_${Date.now()}.${ext || "png"}`;
+
+              if (isElectron) {
+                const outputDir = String(params.outputDir || "");
+                const result = await window.electronAPI!.saveFileSilent(
+                  url,
+                  outputDir,
+                  fileName,
+                );
+                if (!result.success)
+                  throw new Error(result.error || `Save failed for file ${fi + 1}`);
+              } else {
+                try {
+                  const resp = await fetch(url);
+                  if (!resp.ok)
+                    throw new Error(`Download failed: HTTP ${resp.status}`);
+                  const blob = await resp.blob();
+                  const blobUrl = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = blobUrl;
+                  a.download = fileName;
+                  a.style.display = "none";
+                  document.body.appendChild(a);
+                  a.click();
+                  setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(blobUrl);
+                  }, 100);
+                } catch {
+                  window.open(url, "_blank");
+                }
               }
+              savedFiles.push(url);
+              onProgress(((fi + 1) / urlList.length) * 100, `Saved ${fi + 1}/${urlList.length}`);
             }
 
             results.set(nodeId, {
-              outputUrl: url,
-              resultMetadata: { output: url, exportedFileName: fileName },
+              outputUrl: savedFiles[0] ?? "",
+              resultMetadata: { output: savedFiles, exportedFileCount: savedFiles.length },
             });
             callbacks.onNodeStatus(nodeId, "confirmed");
             callbacks.onNodeComplete(nodeId, {
-              urls: [url],
+              urls: savedFiles.length > 0 ? savedFiles : [""],
               cost: 0,
               durationMs: Date.now() - start,
             });
@@ -1099,6 +1198,233 @@ export async function executeWorkflowInBrowser(
               cost: 0,
               durationMs: Date.now() - start,
             });
+            return;
+          }
+
+          // ── Iterator: execute child nodes as a sub-workflow N times ──
+          if (nodeType === "control/iterator") {
+            const iterationMode = String(params.iterationMode ?? "fixed");
+            const fixedCount = Math.max(1, Number(params.iterationCount ?? 1));
+
+            // Parse exposed params
+            const parseExposed = (v: unknown): Array<{ subNodeId: string; subNodeLabel: string; paramKey: string; namespacedKey: string; direction: string; dataType: string }> => {
+              if (typeof v === "string") { try { return JSON.parse(v); } catch { return []; } }
+              return Array.isArray(v) ? v : [];
+            };
+            const exposedInputs = parseExposed(params.exposedInputs);
+            const exposedOutputs = parseExposed(params.exposedOutputs);
+            // Collect child nodes and internal edges
+            const allNodes = Array.from(nodeMap.values());
+            const childNodes = allNodes.filter((n) => n.parentNode === nodeId);
+            const childIdSet = new Set(childNodes.map((n) => n.id));
+            const internalEdges = edgesWithHandles.filter(
+              (e) => childIdSet.has(e.source) && childIdSet.has(e.target),
+            );
+
+            if (childNodes.length === 0) {
+              results.set(nodeId, { outputUrl: "", resultMetadata: {} });
+              callbacks.onNodeStatus(nodeId, "confirmed");
+              callbacks.onNodeComplete(nodeId, { urls: [], cost: 0, durationMs: Date.now() - start });
+              return;
+            }
+
+            // Topological sort of child nodes
+            const childSimpleEdges = internalEdges.map((e) => ({ sourceNodeId: e.source, targetNodeId: e.target }));
+            const childLevels = topologicalLevels(Array.from(childIdSet), childSimpleEdges);
+
+            // Build input routing from exposed inputs (keep raw values for auto-mode slicing)
+            const inputRoutingRaw = new Map<string, Map<string, unknown>>();
+            for (const ep of exposedInputs) {
+              const externalValue = inputs[ep.namespacedKey] ?? inputs[`input-${ep.namespacedKey}`];
+              if (externalValue !== undefined) {
+                if (!inputRoutingRaw.has(ep.subNodeId)) inputRoutingRaw.set(ep.subNodeId, new Map());
+                inputRoutingRaw.get(ep.subNodeId)!.set(ep.paramKey, externalValue);
+              }
+            }
+
+            // Determine iteration count
+            let iterationCount: number;
+            const allExternalValues: unknown[] = [];
+            for (const ep of exposedInputs) {
+              const v = inputs[ep.namespacedKey] ?? inputs[`input-${ep.namespacedKey}`];
+              if (v !== undefined) allExternalValues.push(v);
+            }
+
+            if (iterationMode === "auto") {
+              const arrayLengths = allExternalValues
+                .filter((v) => Array.isArray(v))
+                .map((v) => (v as unknown[]).length);
+
+              if (arrayLengths.length === 0) {
+                if (allExternalValues.length > 0) {
+                  iterationCount = 1;
+                } else {
+                  throw new Error("Auto mode: no external inputs connected. Connect an array input or switch to fixed mode.");
+                }
+              } else {
+                iterationCount = Math.max(...arrayLengths);
+                if (iterationCount === 0) {
+                  results.set(nodeId, { outputUrl: "", resultMetadata: {} });
+                  callbacks.onNodeStatus(nodeId, "confirmed");
+                  callbacks.onNodeComplete(nodeId, { urls: [], cost: 0, durationMs: Date.now() - start });
+                  return;
+                }
+              }
+            } else {
+              iterationCount = fixedCount;
+            }
+
+            // Execute N iterations
+            const iterationOutputs: Array<Record<string, unknown>> = [];
+            let totalCost = 0;
+
+            for (let iter = 0; iter < iterationCount; iter++) {
+              throwIfAborted();
+              const subResults = new Map<string, NodeResult>();
+              let iterFailed = false;
+
+              for (const level of childLevels) {
+                if (iterFailed) break;
+                for (const childId of level) {
+                  if (iterFailed) break;
+                  throwIfAborted();
+
+                  const childNode = nodeMap.get(childId);
+                  if (!childNode) continue;
+
+                  const childType = childNode.data.nodeType;
+                  const childParams = { ...(childNode.data.params ?? {}) };
+
+                  // Inject external inputs (with auto-mode array slicing)
+                  const extInputs = inputRoutingRaw.get(childId);
+                  if (extInputs) {
+                    for (const [pk, rawVal] of extInputs) {
+                      if (iterationMode === "auto" && Array.isArray(rawVal)) {
+                        const arr = rawVal as unknown[];
+                        childParams[pk] = arr.length > 0 ? arr[Math.min(iter, arr.length - 1)] : undefined;
+                      } else if (iterationMode === "fixed" && Array.isArray(rawVal)) {
+                        const arr = rawVal as unknown[];
+                        childParams[pk] = arr.length > 0 ? arr[iter % arr.length] : undefined;
+                      } else {
+                        childParams[pk] = rawVal;
+                      }
+                    }
+                  }
+                  childParams.__iterationIndex = iter;
+
+                  // Resolve internal edges from upstream child outputs
+                  const childInputs = resolveInputs(childId, nodeMap, internalEdges, subResults);
+
+                  // Create a virtual node with merged params for execution
+                  const virtualNode: BrowserNode = { id: childId, data: { nodeType: childType, params: childParams } };
+                  const virtualNodeMap = new Map(nodeMap);
+                  virtualNodeMap.set(childId, virtualNode);
+
+                  // Execute child node inline
+                  callbacks.onNodeStatus(childId, "running");
+                  const childStart = Date.now();
+                  try {
+                    if (childType === "ai-task/run") {
+                      const modelId = String(childParams.modelId ?? "");
+                      if (!modelId) throw new Error("No model selected in child node.");
+                      const apiParams = buildApiParams(childParams, childInputs);
+                      const resolvedParams = await uploadLocalUrls(apiParams, signal);
+                      callbacks.onProgress(childId, 10, `Running ${modelId}...`);
+                      const result = await apiClient.run(modelId, resolvedParams, { signal });
+                      const outputUrl = Array.isArray(result.outputs) && result.outputs.length > 0 ? String(result.outputs[0]) : "";
+                      const model = useModelsStore.getState().getModelById(modelId);
+                      const cost = model?.base_price ?? 0;
+                      totalCost += cost;
+                      subResults.set(childId, {
+                        outputUrl,
+                        resultMetadata: { output: outputUrl, resultUrl: outputUrl, resultUrls: Array.isArray(result.outputs) ? result.outputs : [outputUrl] },
+                      });
+                      callbacks.onNodeStatus(childId, "confirmed");
+                      callbacks.onNodeComplete(childId, { urls: Array.isArray(result.outputs) ? result.outputs.map(String) : [outputUrl], cost, durationMs: Date.now() - childStart });
+                    } else if (childType === "input/text-input") {
+                      const text = String(childParams.text ?? childInputs.text ?? "");
+                      subResults.set(childId, { outputUrl: text, resultMetadata: { output: text } });
+                      callbacks.onNodeStatus(childId, "confirmed");
+                      callbacks.onNodeComplete(childId, { urls: [text], cost: 0, durationMs: Date.now() - childStart });
+                    } else if (childType === "input/media-upload") {
+                      const url = String(childParams.uploadedUrl ?? childInputs.input ?? "");
+                      subResults.set(childId, { outputUrl: url, resultMetadata: { output: url } });
+                      callbacks.onNodeStatus(childId, "confirmed");
+                      callbacks.onNodeComplete(childId, { urls: [url], cost: 0, durationMs: Date.now() - childStart });
+                    } else if (childType === "processing/concat") {
+                      const arr: string[] = [];
+                      for (let ci = 1; ci <= 5; ci++) {
+                        const v = childInputs[`input${ci}`] ?? childParams[`input${ci}`];
+                        if (v) arr.push(...(Array.isArray(v) ? v.map(String) : [String(v)]));
+                      }
+                      subResults.set(childId, { outputUrl: arr[0] ?? "", resultMetadata: { output: arr, resultUrl: arr[0], resultUrls: arr } });
+                      callbacks.onNodeStatus(childId, "confirmed");
+                      callbacks.onNodeComplete(childId, { urls: arr, cost: 0, durationMs: Date.now() - childStart });
+                    } else if (childType === "processing/select") {
+                      const raw = childInputs.input ?? childParams.input;
+                      const arr = Array.isArray(raw) ? raw.map(String) : raw ? [String(raw)] : [];
+                      const idx = Math.floor(Number(childParams.index ?? 0));
+                      const value = arr[idx] ?? "";
+                      subResults.set(childId, { outputUrl: value, resultMetadata: { output: value } });
+                      callbacks.onNodeStatus(childId, "confirmed");
+                      callbacks.onNodeComplete(childId, { urls: [value], cost: 0, durationMs: Date.now() - childStart });
+                    } else {
+                      // Generic pass-through for free-tools and other types
+                      const inputUrl = String(childInputs.input ?? childInputs.media ?? childParams.uploadedUrl ?? "");
+                      if (inputUrl) {
+                        subResults.set(childId, { outputUrl: inputUrl, resultMetadata: { output: inputUrl } });
+                        callbacks.onNodeStatus(childId, "confirmed");
+                        callbacks.onNodeComplete(childId, { urls: [inputUrl], cost: 0, durationMs: Date.now() - childStart });
+                      } else {
+                        throw new Error(`Unsupported child node type: ${childType}`);
+                      }
+                    }
+                  } catch (err) {
+                    iterFailed = true;
+                    const msg = err instanceof Error ? err.message : String(err);
+                    callbacks.onNodeStatus(childId, "error", msg);
+                    failedNodes.add(nodeId);
+                    callbacks.onNodeStatus(nodeId, "error", `Child node failed: ${msg}`);
+                    return;
+                  }
+                }
+              }
+
+              // Collect exposed outputs for this iteration
+              const iterOut: Record<string, unknown> = {};
+              for (const ep of exposedOutputs) {
+                const nodeOut = subResults.get(ep.subNodeId);
+                if (nodeOut) {
+                  iterOut[`output-${ep.namespacedKey}`] = nodeOut.resultMetadata[ep.paramKey] ?? nodeOut.outputUrl;
+                }
+              }
+              iterationOutputs.push(iterOut);
+              onProgress(((iter + 1) / iterationCount) * 100, `Iteration ${iter + 1}/${iterationCount} complete`);
+            }
+
+            // Aggregate results — ALWAYS output arrays regardless of iteration count
+            //   N=1 → ["value"], N=3 → ["v1","v2","v3"], N=0 → []
+            const finalOutputs: Record<string, unknown> = {};
+            for (const ep of exposedOutputs) {
+              const hk = `output-${ep.namespacedKey}`;
+              finalOutputs[hk] = iterationOutputs.map((r) => r[hk]);
+            }
+
+            // Collect all output URLs for the iterator result
+            const allUrls: string[] = [];
+            for (const out of iterationOutputs) {
+              for (const v of Object.values(out)) {
+                if (typeof v === "string" && v) allUrls.push(v);
+                if (Array.isArray(v)) allUrls.push(...v.filter((x): x is string => typeof x === "string" && !!x));
+              }
+            }
+
+            results.set(nodeId, {
+              outputUrl: allUrls[0] ?? "",
+              resultMetadata: { ...finalOutputs, output: allUrls[0] ?? "", resultUrl: allUrls[0] ?? "", resultUrls: allUrls },
+            });
+            callbacks.onNodeStatus(nodeId, "confirmed");
+            callbacks.onNodeComplete(nodeId, { urls: allUrls, cost: totalCost, durationMs: Date.now() - start });
             return;
           }
 
