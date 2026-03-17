@@ -49,7 +49,12 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import { ChevronsDownUp, ChevronsUpDown, Search, ChevronDown } from "lucide-react";
+import {
+  ChevronsDownUp,
+  ChevronsUpDown,
+  Search,
+  ChevronDown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_ORDER: NodeCategory[] = [
@@ -372,8 +377,13 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
     edgeId?: string;
   } | null>(null);
   // When the add-node menu is opened from a node's side button, store placement info
-  const sideAddRef = useRef<{ sourceNodeId: string; side: "left" | "right" } | null>(null);
+  const sideAddRef = useRef<{
+    sourceNodeId: string;
+    side: "left" | "right";
+  } | null>(null);
   const [addNodeQuery, setAddNodeQuery] = useState("");
+  const [addNodeHighlightIndex, setAddNodeHighlightIndex] = useState(0);
+  const addNodeListRef = useRef<HTMLDivElement>(null);
   const [addNodeCollapsed, setAddNodeCollapsed] = useState<
     Record<string, boolean>
   >({});
@@ -703,6 +713,7 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
 
   const openAddNodeMenu = useCallback((x: number, y: number) => {
     setAddNodeQuery("");
+    setAddNodeHighlightIndex(0);
     setContextMenu({ x, y, type: "addNode" });
   }, []);
 
@@ -852,6 +863,25 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
       .slice(0, 12);
   }, [addNodeQuery, storeModels]);
 
+  // Flat list of all selectable items for keyboard navigation in add-node menu
+  type AddNodeItem =
+    | { kind: "def"; def: NodeTypeDefinition }
+    | { kind: "model"; model: (typeof storeModels)[number] };
+  const addNodeFlatItems = useMemo<AddNodeItem[]>(() => {
+    const items: AddNodeItem[] = [];
+    for (const [category, defs] of groupedAddNodeDefs) {
+      if (addNodeCollapsed[category]) continue;
+      for (const def of defs) items.push({ kind: "def", def });
+    }
+    for (const model of matchedModels) items.push({ kind: "model", model });
+    return items;
+  }, [groupedAddNodeDefs, matchedModels, addNodeCollapsed]);
+
+  // Reset highlight when search changes
+  useEffect(() => {
+    setAddNodeHighlightIndex(0);
+  }, [addNodeQuery]);
+
   /** Add an ai-task/run node with a specific model pre-selected */
   const addModelNode = useCallback(
     (model: { model_id: string; name: string }) => {
@@ -878,9 +908,15 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
           const sourceW = sourceEl?.offsetWidth ?? 380;
           const GAP = 80;
           if (sideInfo.side === "right") {
-            position = { x: sourceNode.position.x + sourceW + GAP, y: sourceNode.position.y };
+            position = {
+              x: sourceNode.position.x + sourceW + GAP,
+              y: sourceNode.position.y,
+            };
           } else {
-            position = { x: sourceNode.position.x - 380 - GAP, y: sourceNode.position.y };
+            position = {
+              x: sourceNode.position.x - 380 - GAP,
+              y: sourceNode.position.y,
+            };
           }
         } else {
           position = projectMenuPosition(contextMenu.x, contextMenu.y);
@@ -891,10 +927,14 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
       }
 
       // Build model input schema from the desktop model store
-      const desktopModel = useModelsStore.getState().models.find((m) => m.model_id === model.model_id);
+      const desktopModel = useModelsStore
+        .getState()
+        .models.find((m) => m.model_id === model.model_id);
       let modelSchema: Array<{ name: string; default?: unknown }> = [];
       if (desktopModel) {
-        modelSchema = formFieldsToModelParamSchema(getFormFieldsFromModel(desktopModel));
+        modelSchema = formFieldsToModelParamSchema(
+          getFormFieldsFromModel(desktopModel),
+        );
       }
 
       const newNodeId = addNode(
@@ -934,7 +974,53 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
       selectNode(newNodeId);
       setContextMenu(null);
     },
-    [addNode, contextMenu, nodes, nodeDefs, projectMenuPosition, recordRecentNodeType, handleNodeCreated, selectNode],
+    [
+      addNode,
+      contextMenu,
+      nodes,
+      nodeDefs,
+      projectMenuPosition,
+      recordRecentNodeType,
+      handleNodeCreated,
+      selectNode,
+    ],
+  );
+
+  const handleAddNodeKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setContextMenu(null);
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setAddNodeHighlightIndex((i) =>
+          i < addNodeFlatItems.length - 1 ? i + 1 : 0,
+        );
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setAddNodeHighlightIndex((i) =>
+          i > 0 ? i - 1 : addNodeFlatItems.length - 1,
+        );
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (addNodeFlatItems.length > 0) {
+          const idx = Math.min(
+            addNodeHighlightIndex,
+            addNodeFlatItems.length - 1,
+          );
+          const item = addNodeFlatItems[idx];
+          if (item.kind === "def") addNodeAtMenuPosition(item.def);
+          else addModelNode(item.model);
+        }
+      }
+    },
+    [
+      addNodeFlatItems,
+      addNodeHighlightIndex,
+      addNodeAtMenuPosition,
+      addModelNode,
+    ],
   );
 
   const getContextMenuItems = useCallback((): ContextMenuItem[] => {
@@ -1672,6 +1758,7 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
                     type="text"
                     value={addNodeQuery}
                     onChange={(e) => setAddNodeQuery(e.target.value)}
+                    onKeyDown={handleAddNodeKeyDown}
                     placeholder={t(
                       "workflow.searchNodesPlaceholder",
                       "Search nodes or models...",
@@ -1682,143 +1769,196 @@ export function WorkflowCanvas({ nodeDefs = [] }: WorkflowCanvasProps) {
               </div>
 
               {/* ── node list ── */}
-              <div className="flex-1 overflow-y-auto px-2 py-1">
-                {groupedAddNodeDefs.map(([category, defs]) => {
-                  const isCollapsed = addNodeCollapsed[category] ?? false;
-                  const dot = catDot[category] ?? "bg-gray-400";
+              <div
+                ref={addNodeListRef}
+                className="flex-1 overflow-y-auto px-2 py-1"
+              >
+                {(() => {
+                  let flatIdx = 0;
                   return (
-                    <div key={category} className="mb-0.5">
-                      <button
-                        onClick={() =>
-                          setAddNodeCollapsed((prev) => ({
-                            ...prev,
-                            [category]: !isCollapsed,
-                          }))
-                        }
-                        className="w-full flex items-center gap-2 px-2 h-7 rounded-lg text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
-                      >
-                        <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dot)} />
-                        <span className="text-[11px] font-semibold uppercase tracking-wide">
-                          {t(`workflow.nodeCategory.${category}`, category)}
-                        </span>
-                        <span className="ml-auto text-[10px] text-muted-foreground/50 tabular-nums mr-0.5">
-                          {defs.length}
-                        </span>
-                        <ChevronDown
-                          className={cn(
-                            "w-3 h-3 text-muted-foreground/40 transition-transform duration-200",
-                            isCollapsed && "-rotate-90",
-                          )}
-                        />
-                      </button>
-                      {!isCollapsed && (
-                        <div className="py-0.5">
-                          {defs.map((def) => {
-                            const DefIcon = getNodeIcon(def.type);
-                            const hint = t(`workflow.nodeDefs.${def.type}.hint`, "");
-                            const isAiTask = def.category === "ai-task";
-                            return (
-                              <Tooltip key={def.type} delayDuration={0}>
-                                <TooltipTrigger asChild>
-                                  <div
-                                    onClick={() => addNodeAtMenuPosition(def)}
-                                    className={cn(
-                                      "flex items-center gap-2 h-8 px-2 rounded-lg cursor-pointer select-none",
-                                      "text-[12px] text-foreground/70 transition-colors duration-100",
-                                      "hover:bg-muted hover:text-foreground",
-                                    )}
-                                  >
-                                    {DefIcon && (
-                                      <div className="rounded-md bg-primary/10 p-1 flex-shrink-0">
-                                        <DefIcon className="w-3 h-3 text-primary" />
-                                      </div>
-                                    )}
-                                    <span className="truncate">
-                                      {t(
-                                        `workflow.nodeDefs.${def.type}.label`,
-                                        def.label,
-                                      )}
-                                    </span>
-                                    {isAiTask && (
-                                      <span className="ml-auto shrink-0 text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">
-                                        AI
-                                      </span>
-                                    )}
-                                  </div>
-                                </TooltipTrigger>
-                                {hint && (
-                                  <TooltipContent side="right" className="max-w-[220px] z-[1001]">
-                                    {hint}
-                                  </TooltipContent>
-                                )}
-                              </Tooltip>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* ── Model search results ── */}
-                {matchedModels.length > 0 && (
-                  <div className="mb-0.5">
-                    <div className="w-full flex items-center gap-2 px-2 h-7 text-muted-foreground/80">
-                      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", "bg-violet-500")} />
-                      <span className="text-[11px] font-semibold uppercase tracking-wide">
-                        WaveSpeed API
-                      </span>
-                      <span className="ml-auto text-[10px] text-muted-foreground/50 tabular-nums mr-0.5">
-                        {matchedModels.length}
-                      </span>
-                    </div>
-                    <div className="py-0.5">
-                      {matchedModels.map((model) => {
-                        const AIIcon = getNodeIcon("ai-task/run");
+                    <>
+                      {groupedAddNodeDefs.map(([category, defs]) => {
+                        const isCollapsed = addNodeCollapsed[category] ?? false;
+                        const dot = catDot[category] ?? "bg-gray-400";
                         return (
-                          <Tooltip key={model.model_id} delayDuration={0}>
-                            <TooltipTrigger asChild>
-                              <div
-                                onClick={() => addModelNode(model)}
+                          <div key={category} className="mb-0.5">
+                            <button
+                              onClick={() =>
+                                setAddNodeCollapsed((prev) => ({
+                                  ...prev,
+                                  [category]: !isCollapsed,
+                                }))
+                              }
+                              className="w-full flex items-center gap-2 px-2 h-7 rounded-lg text-muted-foreground/80 hover:text-foreground hover:bg-muted/60 transition-colors"
+                            >
+                              <span
                                 className={cn(
-                                  "flex items-center gap-2 h-8 px-2 rounded-lg cursor-pointer select-none",
-                                  "text-[12px] text-foreground/70 transition-colors duration-100",
-                                  "hover:bg-muted hover:text-foreground",
+                                  "w-1.5 h-1.5 rounded-full shrink-0",
+                                  dot,
                                 )}
-                              >
-                                {AIIcon && (
-                                  <div className="rounded-md bg-primary/10 p-1 flex-shrink-0">
-                                    <AIIcon className="w-3 h-3 text-primary" />
-                                  </div>
+                              />
+                              <span className="text-[11px] font-semibold uppercase tracking-wide">
+                                {t(
+                                  `workflow.nodeCategory.${category}`,
+                                  category,
                                 )}
-                                <span className="truncate">{model.name}</span>
-                                {model.base_price !== undefined && (
-                                  <span className="ml-auto shrink-0 text-[9px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                                    ${model.base_price.toFixed(4)}
-                                  </span>
+                              </span>
+                              <span className="ml-auto text-[10px] text-muted-foreground/50 tabular-nums mr-0.5">
+                                {defs.length}
+                              </span>
+                              <ChevronDown
+                                className={cn(
+                                  "w-3 h-3 text-muted-foreground/40 transition-transform duration-200",
+                                  isCollapsed && "-rotate-90",
                                 )}
+                              />
+                            </button>
+                            {!isCollapsed && (
+                              <div className="py-0.5">
+                                {defs.map((def) => {
+                                  const myIdx = flatIdx++;
+                                  const isHighlighted =
+                                    myIdx === addNodeHighlightIndex;
+                                  const DefIcon = getNodeIcon(def.type);
+                                  const hint = t(
+                                    `workflow.nodeDefs.${def.type}.hint`,
+                                    "",
+                                  );
+                                  const isAiTask = def.category === "ai-task";
+                                  return (
+                                    <Tooltip key={def.type} delayDuration={0}>
+                                      <TooltipTrigger asChild>
+                                        <div
+                                          ref={(el) => {
+                                            if (isHighlighted && el)
+                                              el.scrollIntoView({
+                                                block: "nearest",
+                                              });
+                                          }}
+                                          onClick={() =>
+                                            addNodeAtMenuPosition(def)
+                                          }
+                                          onMouseEnter={() =>
+                                            setAddNodeHighlightIndex(myIdx)
+                                          }
+                                          className={cn(
+                                            "flex items-center gap-2 h-8 px-2 rounded-lg cursor-pointer select-none",
+                                            "text-[12px] text-foreground/70 transition-colors duration-100",
+                                            isHighlighted
+                                              ? "bg-accent text-accent-foreground"
+                                              : "hover:bg-muted hover:text-foreground",
+                                          )}
+                                        >
+                                          {DefIcon && (
+                                            <div className="rounded-md bg-primary/10 p-1 flex-shrink-0">
+                                              <DefIcon className="w-3 h-3 text-primary" />
+                                            </div>
+                                          )}
+                                          <span className="truncate">
+                                            {t(
+                                              `workflow.nodeDefs.${def.type}.label`,
+                                              def.label,
+                                            )}
+                                          </span>
+                                          {isAiTask && (
+                                            <span className="ml-auto shrink-0 text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">
+                                              AI
+                                            </span>
+                                          )}
+                                        </div>
+                                      </TooltipTrigger>
+                                      {hint && (
+                                        <TooltipContent
+                                          side="right"
+                                          className="max-w-[220px] z-[1001]"
+                                        >
+                                          {hint}
+                                        </TooltipContent>
+                                      )}
+                                    </Tooltip>
+                                  );
+                                })}
                               </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-[220px] z-[1001]">
-                              {model.name}
-                            </TooltipContent>
-                          </Tooltip>
+                            )}
+                          </div>
                         );
                       })}
-                    </div>
-                  </div>
-                )}
 
-                {addNodeDisplayDefs.length === 0 && matchedModels.length === 0 && (
-                  <div className="px-3 py-6 text-xs text-muted-foreground/60 text-center">
-                    {t("workflow.noNodesAvailable", "No nodes available")}
-                  </div>
-                )}
+                      {/* ── Model search results ── */}
+                      {matchedModels.length > 0 && (
+                        <div className="mb-0.5">
+                          <div className="w-full flex items-center gap-2 px-2 h-7 text-muted-foreground/80">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide">
+                              MODELS
+                            </span>
+                          </div>
+                          <div className="py-0.5">
+                            {matchedModels.map((model) => {
+                              const myIdx = flatIdx++;
+                              const isHighlighted =
+                                myIdx === addNodeHighlightIndex;
+                              const parts = model.model_id.split("/");
+                              const provider = parts[0] || "";
+                              const shortName =
+                                parts.slice(1).join("/") || model.model_id;
+                              return (
+                                <div
+                                  key={model.model_id}
+                                  ref={(el) => {
+                                    if (isHighlighted && el)
+                                      el.scrollIntoView({ block: "nearest" });
+                                  }}
+                                  onClick={() => addModelNode(model)}
+                                  onMouseEnter={() =>
+                                    setAddNodeHighlightIndex(myIdx)
+                                  }
+                                  title={model.model_id}
+                                  className={cn(
+                                    "flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer select-none",
+                                    "transition-colors duration-100",
+                                    isHighlighted
+                                      ? "bg-primary/10"
+                                      : "hover:bg-muted",
+                                  )}
+                                >
+                                  <div className="flex flex-col min-w-0 flex-1">
+                                    <span className="text-[12px] font-semibold text-foreground truncate">
+                                      {shortName}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground/60 truncate">
+                                      {provider}/
+                                    </span>
+                                  </div>
+                                  <span className="shrink-0 text-[9px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">
+                                    API
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {addNodeDisplayDefs.length === 0 &&
+                        matchedModels.length === 0 && (
+                          <div className="px-3 py-6 text-xs text-muted-foreground/60 text-center">
+                            {t(
+                              "workflow.noNodesAvailable",
+                              "No nodes available",
+                            )}
+                          </div>
+                        )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* ── footer hint ── */}
               <div className="px-4 py-2 border-t border-border/70 text-[10px] text-muted-foreground/40">
-                {t("workflow.dragOrClickToAdd", "Drag to canvas or click to add")}
+                {t(
+                  "workflow.dragOrClickToAdd",
+                  "Drag to canvas or click to add",
+                )}
               </div>
             </div>
           </ContextMenu>

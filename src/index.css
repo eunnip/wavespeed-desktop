@@ -555,7 +555,10 @@
   pointer-events: all;
   fill: transparent;
   stroke: transparent;
-  transition: fill 150ms ease, stroke 150ms ease, r 150ms ease;
+  transition:
+    fill 150ms ease,
+    stroke 150ms ease,
+    r 150ms ease;
 }
 .react-flow__edgeupdater-source {
   transform: translateX(-12px);

@@ -59,16 +59,6 @@ import {
 type RightPanelTab = "result" | "featured" | "templates";
 
 /** Format raw model name/id for display. e.g. "google/nano-banana-pro/text-to-image" → "Google / Nano Banana Pro" */
-function formatModelDisplay(name: string): string {
-  const parts = name.split("/");
-  const fmt = (s: string) =>
-    s
-      .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  if (parts.length >= 2) return `${fmt(parts[0])} / ${fmt(parts[1])}`;
-  return fmt(parts[0]);
-}
 
 const isCapacitorNative = () => {
   try {
@@ -121,6 +111,7 @@ export function PlaygroundPage() {
     resetForm,
     runPrediction,
     runBatch,
+    abortRun,
     clearBatchResults,
     generateBatchInputs,
     setUploading,
@@ -468,23 +459,42 @@ export function PlaygroundPage() {
   const handleSaveTemplate = async (data: TemplateFormData) => {
     if (!activeTab?.selectedModel) return;
 
-    await createTemplate({
-      name: data.name,
-      description: data.description || null,
-      tags: data.tags,
-      thumbnail: data.thumbnail || null,
-      type: "custom",
-      templateType: "playground",
-      playgroundData: {
-        modelId: activeTab.selectedModel.model_id,
-        modelName: activeTab.selectedModel.name,
-        values: activeTab.formValues,
-      },
-    });
-    toast({
-      title: t("playground.templateSaved"),
-      description: t("playground.savedAs", { name: data.name }),
-    });
+    try {
+      const template = await createTemplate({
+        name: data.name,
+        description: data.description || null,
+        tags: data.tags,
+        thumbnail: data.thumbnail || null,
+        type: "custom",
+        templateType: "playground",
+        playgroundData: {
+          modelId: activeTab.selectedModel.model_id,
+          modelName: activeTab.selectedModel.name,
+          values: activeTab.formValues,
+        },
+      });
+      const savedName = template.name;
+      if (savedName !== data.name) {
+        toast({
+          title: t("playground.templateSaved"),
+          description: t("templates.autoRenamed", {
+            original: data.name,
+            renamed: savedName,
+          }),
+        });
+      } else {
+        toast({
+          title: t("playground.templateSaved"),
+          description: t("playground.savedAs", { name: savedName }),
+        });
+      }
+    } catch (err) {
+      toast({
+        title: t("common.error"),
+        description: err instanceof Error ? err.message : t("common.error"),
+        variant: "destructive",
+      });
+    }
   };
 
   // Create tab when navigating to playground with a specific model (only on initial load)
@@ -577,7 +587,11 @@ export function PlaygroundPage() {
   // When a tab is created with pre-loaded outputs (e.g. from History/Assets "Customize"),
   // auto-switch to the Result tab so the user sees the output immediately.
   useEffect(() => {
-    if (activeTab?.outputs && activeTab.outputs.length > 0 && rightPanelTab !== "result") {
+    if (
+      activeTab?.outputs &&
+      activeTab.outputs.length > 0 &&
+      rightPanelTab !== "result"
+    ) {
       setRightPanelTab("result");
       sessionStorage.setItem("pg_rightPanelTab", "result");
     }
@@ -933,11 +947,12 @@ export function PlaygroundPage() {
                     isRunning={activeTab?.isRunning ?? false}
                     isUploading={(activeTab?.uploadingCount ?? 0) > 0}
                     onRun={handleRun}
+                    onAbort={abortRun}
                     runLabel={t("playground.run")}
                     runningLabel={
                       activeTab?.batchState?.isRunning
-                        ? `${t("playground.running")} (${activeTab.batchState.queue.length})`
-                        : t("playground.running")
+                        ? `${t("playground.abort", "Abort")} (${activeTab.batchState.queue.length})`
+                        : t("playground.abort", "Abort")
                     }
                     price={
                       isPricingLoading
@@ -1018,9 +1033,8 @@ export function PlaygroundPage() {
                           <div
                             key={tab.id}
                             title={
-                              tab.selectedModel?.name
-                                ? formatModelDisplay(tab.selectedModel.name)
-                                : t("playground.tabs.newTab")
+                              tab.selectedModel?.model_id ||
+                              t("playground.tabs.newTab")
                             }
                             onClick={() => {
                               handleTabClick(tab.id);
@@ -1040,9 +1054,8 @@ export function PlaygroundPage() {
                             )}
                             <div className="flex-1 min-w-0">
                               <div className="truncate font-medium">
-                                {tab.selectedModel?.name
-                                  ? formatModelDisplay(tab.selectedModel.name)
-                                  : t("playground.tabs.newTab")}
+                                {tab.selectedModel?.model_id ||
+                                  t("playground.tabs.newTab")}
                               </div>
                               <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                                 {tab.selectedModel?.type && (
@@ -1118,12 +1131,11 @@ export function PlaygroundPage() {
                           handleTabClick(tab.id);
                         }}
                         title={
-                          tab.selectedModel?.name
-                            ? formatModelDisplay(tab.selectedModel.name)
-                            : t("playground.tabs.newTab")
+                          tab.selectedModel?.model_id ||
+                          t("playground.tabs.newTab")
                         }
                         className={cn(
-                          "group relative flex h-8 items-center gap-1.5 px-3 text-xs transition-colors cursor-pointer select-none min-w-[60px] max-w-[180px] hover:bg-primary/10 dark:hover:bg-muted/60",
+                          "group relative flex h-8 items-center gap-1.5 px-3 text-xs transition-colors cursor-pointer select-none min-w-[80px] max-w-[240px] hover:bg-primary/10 dark:hover:bg-muted/60",
                           dragTabId === tab.id && "opacity-40",
                           isActive
                             ? "bg-primary/15 dark:bg-primary/10 text-foreground font-medium"
@@ -1139,15 +1151,12 @@ export function PlaygroundPage() {
                           dropIndicator.side === "right" && (
                             <div className="absolute -right-px top-1 bottom-1 w-0.5 rounded-full bg-primary" />
                           )}
-                        {tab.isRunning ? (
+                        {tab.isRunning && (
                           <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-                        ) : (
-                          <Sparkles className="h-3.5 w-3.5 shrink-0" />
                         )}
                         <span className="truncate flex-1">
-                          {tab.selectedModel?.name
-                            ? formatModelDisplay(tab.selectedModel.name)
-                            : t("playground.tabs.newTab")}
+                          {tab.selectedModel?.model_id ||
+                            t("playground.tabs.newTab")}
                         </span>
                         <button
                           onClick={(e) => handleCloseTab(e, tab.id)}

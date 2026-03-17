@@ -28,6 +28,7 @@ import { FormField } from "@/components/playground/FormField";
 import { ModelSelector } from "@/components/playground/ModelSelector";
 import type { FormFieldConfig } from "@/lib/schemaToForm";
 import type { Model } from "@/types/model";
+import { workflowClient } from "@/api/client";
 
 import {
   type CustomNodeData,
@@ -154,6 +155,11 @@ export function CustomNodeBody(props: CustomNodeBodyProps) {
     collapsed = false,
   } = props;
   const { t } = useTranslation();
+
+  /** CDN upload via workflowClient so workflow requests use the correct X-Client-Name header. */
+  const handleCdnUpload = async (file: File): Promise<string> => {
+    return workflowClient.uploadFile(file);
+  };
 
   /* ── Collapsed: only connected rows in same order as expanded ── */
   if (collapsed) {
@@ -539,6 +545,7 @@ export function CustomNodeBody(props: CustomNodeBodyProps) {
                           : undefined
                       }
                       formValues={formValues}
+                      onUploadFile={handleCdnUpload}
                       handleAnchor={
                         <HandleAnchor
                           id={hid}
@@ -586,6 +593,7 @@ export function CustomNodeBody(props: CustomNodeBodyProps) {
                           onChange={(v) => setParam(field.name, v)}
                           modelType={currentModel?.type}
                           formValues={formValues}
+                          onUploadFile={handleCdnUpload}
                           hideLabel
                         />
                       </div>
@@ -958,6 +966,7 @@ export function CustomNodeBody(props: CustomNodeBodyProps) {
                     value={formValues[p.key]}
                     onChange={(v) => setParam(p.key, v)}
                     formValues={formValues}
+                    onUploadFile={handleCdnUpload}
                   />
                 </div>
               );
@@ -996,6 +1005,7 @@ export function CustomNodeBody(props: CustomNodeBodyProps) {
                       value={formValues[p.key]}
                       onChange={(v) => setParam(p.key, v)}
                       formValues={formValues}
+                      onUploadFile={handleCdnUpload}
                       handleAnchor={
                         <HandleAnchor id={hid} type="target" connected={conn} />
                       }

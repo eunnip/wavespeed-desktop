@@ -362,8 +362,14 @@ export function FormField({
       case "size": {
         // Normalize size value: API may return a single number (e.g. 2048 or "2048")
         // but SizeSelector expects "W*H" format (e.g. "2048*2048")
-        let sizeValue = (value as string) || (field.default as string) || "1024*1024";
-        if (typeof sizeValue === "number" || (typeof sizeValue === "string" && !sizeValue.includes("*") && !isNaN(Number(sizeValue)))) {
+        let sizeValue =
+          (value as string) || (field.default as string) || "1024*1024";
+        if (
+          typeof sizeValue === "number" ||
+          (typeof sizeValue === "string" &&
+            !sizeValue.includes("*") &&
+            !isNaN(Number(sizeValue)))
+        ) {
           const n = Number(sizeValue);
           sizeValue = `${n}*${n}`;
         }

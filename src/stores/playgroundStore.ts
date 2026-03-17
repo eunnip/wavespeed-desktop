@@ -130,6 +130,9 @@ export async function hydratePlaygroundSession(): Promise<void> {
   }
 }
 
+// Module-level map for AbortControllers (not serializable, so kept outside store state)
+const abortControllers = new Map<string, AbortController>();
+
 interface PlaygroundTab {
   id: string;
   createdAt: number;
@@ -181,6 +184,7 @@ interface PlaygroundState {
   clearValidationError: (key: string) => void;
   resetForm: () => void;
   runPrediction: () => Promise<void>;
+  abortRun: () => void;
   clearOutput: () => void;
 
   // Batch processing actions
@@ -200,7 +204,9 @@ interface PlaygroundState {
   consumePendingFormValues: () => Record<string, unknown> | null;
 
   // Find formValues from any tab's generationHistory by prediction ID
-  findFormValuesByPredictionId: (predictionId: string) => Record<string, unknown> | null;
+  findFormValuesByPredictionId: (
+    predictionId: string,
+  ) => Record<string, unknown> | null;
 }
 
 // Check if a value is considered "empty"
@@ -248,7 +254,12 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
   tabs: initialSession?.tabs ?? [],
   activeTabId: initialSession?.activeTabId ?? null,
 
-  createTab: (model?: Model, initialFormValues?: Record<string, unknown>, initialOutputs?: (string | Record<string, unknown>)[], initialPrediction?: PredictionResult | null) => {
+  createTab: (
+    model?: Model,
+    initialFormValues?: Record<string, unknown>,
+    initialOutputs?: (string | Record<string, unknown>)[],
+    initialPrediction?: PredictionResult | null,
+  ) => {
     const id = `tab-${++tabCounter}`;
     const newTab = createEmptyTab(id, model);
     if (initialFormValues) {
@@ -457,6 +468,10 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
 
     const tabId = get().activeTabId;
 
+    // Create AbortController for this run
+    const controller = new AbortController();
+    if (tabId) abortControllers.set(tabId, controller);
+
     try {
       // Clean up form values - remove empty strings and undefined
       const cleanedInput: Record<string, unknown> = {};
@@ -479,6 +494,7 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
         normalizedInput,
         {
           enableSyncMode: normalizedInput.enable_sync_mode as boolean,
+          signal: controller.signal,
         },
       );
 
@@ -561,13 +577,17 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
         ),
       }));
     } catch (error) {
+      // Don't show error for user-initiated abort
+      const isAbort =
+        error instanceof DOMException && error.name === "AbortError";
       set((state) => ({
         tabs: state.tabs.map((tab) =>
           tab.id === tabId
             ? {
                 ...tab,
-                error:
-                  error instanceof Error
+                error: isAbort
+                  ? null
+                  : error instanceof Error
                     ? error.message
                     : "Failed to run prediction",
                 isRunning: false,
@@ -575,6 +595,17 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
             : tab,
         ),
       }));
+    } finally {
+      if (tabId) abortControllers.delete(tabId);
+    }
+  },
+
+  abortRun: () => {
+    const tabId = get().activeTabId;
+    if (!tabId) return;
+    const controller = abortControllers.get(tabId);
+    if (controller) {
+      controller.abort();
     }
   },
 
@@ -679,6 +710,10 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
 
     const tabId = get().activeTabId;
 
+    // Create AbortController for this batch run
+    const controller = new AbortController();
+    if (tabId) abortControllers.set(tabId, controller);
+
     set((state) => ({
       tabs: state.tabs.map((tab) =>
         tab.id === tabId
@@ -731,6 +766,7 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
           normalizedInput,
           {
             enableSyncMode: normalizedInput.enable_sync_mode as boolean,
+            signal: controller.signal,
           },
         );
         const timing = Date.now() - startTime;
@@ -807,6 +843,11 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
           ),
         }));
       } catch (error) {
+        // Skip state updates for aborted requests
+        const isAbort =
+          error instanceof DOMException && error.name === "AbortError";
+        if (isAbort) return;
+
         const errorMessage =
           error instanceof Error ? error.message : "Failed to run prediction";
         const timing = Date.now() - startTime;
@@ -858,14 +899,17 @@ export const usePlaygroundStore = create<PlaygroundState>((set, get) => ({
           ? {
               ...tab,
               isRunning: false,
+              error: null,
               batchState: tab.batchState
                 ? { ...tab.batchState, isRunning: false }
                 : null,
-              batchResults: results,
+              batchResults: results.filter(Boolean),
             }
           : tab,
       ),
     }));
+
+    if (tabId) abortControllers.delete(tabId);
   },
 
   cancelBatch: () => {

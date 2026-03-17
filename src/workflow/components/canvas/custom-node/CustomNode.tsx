@@ -20,7 +20,7 @@ import { Handle, Position, useReactFlow, type NodeProps } from "reactflow";
 import { useExecutionStore } from "../../../stores/execution.store";
 import { useWorkflowStore } from "../../../stores/workflow.store";
 import { useUIStore } from "../../../stores/ui.store";
-import { apiClient } from "@/api/client";
+import { workflowClient } from "@/api/client";
 import { useModelsStore } from "@/stores/modelsStore";
 import { getFormFieldsFromModel } from "@/lib/schemaToForm";
 import { formFieldsToModelParamSchema } from "../../../lib/model-converter";
@@ -572,7 +572,7 @@ function CustomNodeComponent({
     } = settings;
 
     try {
-      const optimized = await apiClient.optimizePrompt({
+      const optimized = await workflowClient.optimizePrompt({
         ...settingsForApi,
         text: sourceText,
       });
@@ -964,15 +964,30 @@ function CustomNodeComponent({
               }`}
               onClick={(e) => {
                 e.stopPropagation();
-                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                const rect = (
+                  e.currentTarget as HTMLElement
+                ).getBoundingClientRect();
                 window.dispatchEvent(
                   new CustomEvent("workflow:open-add-node-menu", {
-                    detail: { x: rect.right, y: rect.top + rect.height / 2, sourceNodeId: id, side: "right" },
+                    detail: {
+                      x: rect.right,
+                      y: rect.top + rect.height / 2,
+                      sourceNodeId: id,
+                      side: "right",
+                    },
                   }),
                 );
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+              >
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
