@@ -640,7 +640,12 @@ export function TemplatesPage() {
           className="hidden"
         />
 
-        <Button variant="outline" size="sm" onClick={handleExportAll}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="transition-all duration-200"
+          onClick={handleExportAll}
+        >
           <Download className="h-4 w-4 mr-1" />
           {selectedIds.size > 0
             ? `${t("templates.export")} (${selectedIds.size})`
@@ -673,6 +678,7 @@ export function TemplatesPage() {
             variant="destructive"
             size="sm"
             onClick={handleDeleteSelected}
+            className="animate-in fade-in slide-in-from-left-2 duration-200"
           >
             <Trash2 className="h-4 w-4 mr-1" />
             {t("templates.deleteSelected", { count: selectedIds.size })}
