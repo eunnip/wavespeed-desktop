@@ -230,6 +230,38 @@ export function registerTemplateIpc(): void {
     },
   );
 
+  // Export all templates merged into one file — save dialog
+  ipcMain.handle(
+    "template:exportMerged",
+    async (
+      _event,
+      args: { ids: string[]; defaultName: string },
+    ): Promise<{ success: boolean; filePath?: string; canceled?: boolean }> => {
+      const templates = args.ids
+        .map((id) => getTemplateById(id))
+        .filter(Boolean) as Template[];
+      if (templates.length === 0) throw new Error("No templates found");
+
+      const win = BrowserWindow.getFocusedWindow();
+      const result = await dialog.showSaveDialog(win!, {
+        defaultPath: `${sanitizeFilename(args.defaultName)}.json`,
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      });
+
+      if (result.canceled || !result.filePath) {
+        return { success: false, canceled: true };
+      }
+
+      const data: TemplateExport = {
+        version: "1.0",
+        exportedAt: new Date().toISOString(),
+        templates,
+      };
+      writeFileSync(result.filePath, JSON.stringify(data, null, 2), "utf-8");
+      return { success: true, filePath: result.filePath };
+    },
+  );
+
   // Import picker — multi-file selection, returns parsed data
   ipcMain.handle(
     "template:importPick",
