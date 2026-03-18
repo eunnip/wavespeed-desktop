@@ -1138,6 +1138,8 @@
     "modelIdLabel": "ID du modèle",
     "selectNode": "Sélectionnez un nœud à configurer",
     "noExecutions": "Pas encore d'exécutions",
+    "selectAsOutput": "Utiliser comme sortie",
+    "selectedAsOutput": "Sélectionné",
     "budgetExceeded": "Budget dépassé",
     "dailySpend": "Dépenses quotidiennes",
     "perExecutionLimit": "Limite par exécution",

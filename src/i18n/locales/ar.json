@@ -1137,6 +1137,8 @@
     "modelIdLabel": "معرف النموذج",
     "selectNode": "اختر عقدة للتكوين",
     "noExecutions": "لا توجد عمليات تنفيذ بعد",
+    "selectAsOutput": "استخدام كمخرج",
+    "selectedAsOutput": "تم التحديد",
     "budgetExceeded": "تجاوز الميزانية",
     "dailySpend": "الإنفاق اليومي",
     "perExecutionLimit": "حد التنفيذ لكل عملية",

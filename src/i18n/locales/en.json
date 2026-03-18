@@ -1209,6 +1209,8 @@
     "modelIdLabel": "Model ID",
     "selectNode": "Select a node to configure",
     "noExecutions": "No executions yet",
+    "selectAsOutput": "Use as output",
+    "selectedAsOutput": "Selected",
     "budgetExceeded": "Budget exceeded",
     "dailySpend": "Daily Spend",
     "perExecutionLimit": "Per-Execution Limit",

@@ -1137,6 +1137,8 @@
     "modelIdLabel": "मॉडल ID",
     "selectNode": "कॉन्फ़िगर करने के लिए नोड चुनें",
     "noExecutions": "अभी तक कोई निष्पादन नहीं",
+    "selectAsOutput": "आउटपुट के रूप में उपयोग करें",
+    "selectedAsOutput": "चयनित",
     "budgetExceeded": "बजट पार",
     "dailySpend": "दैनिक खर्च",
     "perExecutionLimit": "प्रति निष्पादन सीमा",

@@ -1421,6 +1421,8 @@
     "exportFailed": "導出失敗",
     "estimated": "費用",
     "noExecutions": "暫無執行記錄",
+    "selectAsOutput": "選為輸出",
+    "selectedAsOutput": "已選為輸出",
     "budgetExceeded": "超出預算",
     "dailySpend": "每日支出",
     "perExecutionLimit": "每次執行限制",

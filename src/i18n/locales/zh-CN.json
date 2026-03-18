@@ -1200,6 +1200,8 @@
     "modelIdLabel": "模型 ID",
     "selectNode": "选择节点进行配置",
     "noExecutions": "暂无执行记录",
+    "selectAsOutput": "选为输出",
+    "selectedAsOutput": "已选为输出",
     "budgetExceeded": "超出预算",
     "dailySpend": "今日花费",
     "perExecutionLimit": "单次执行限额",

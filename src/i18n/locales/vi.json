@@ -1137,6 +1137,8 @@
     "modelIdLabel": "ID mô hình",
     "selectNode": "Chọn nút để cấu hình",
     "noExecutions": "Chưa có lần thực thi",
+    "selectAsOutput": "Dùng làm đầu ra",
+    "selectedAsOutput": "Đã chọn",
     "budgetExceeded": "Vượt ngân sách",
     "dailySpend": "Chi tiêu hàng ngày",
     "perExecutionLimit": "Giới hạn mỗi lần thực thi",

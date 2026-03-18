@@ -1137,6 +1137,8 @@
     "modelIdLabel": "ID модели",
     "selectNode": "Выберите узел для настройки",
     "noExecutions": "Пока нет выполнений",
+    "selectAsOutput": "Использовать как выход",
+    "selectedAsOutput": "Выбрано",
     "budgetExceeded": "Превышен бюджет",
     "dailySpend": "Ежедневные расходы",
     "perExecutionLimit": "Лимит на выполнение",

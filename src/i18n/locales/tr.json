@@ -1137,6 +1137,8 @@
     "modelIdLabel": "Model ID",
     "selectNode": "Yapılandırmak için düğüm seçin",
     "noExecutions": "Henüz yürütme yok",
+    "selectAsOutput": "Çıktı olarak kullan",
+    "selectedAsOutput": "Seçildi",
     "budgetExceeded": "Bütçe aşıldı",
     "dailySpend": "Günlük harcama",
     "perExecutionLimit": "Yürütme başına limit",

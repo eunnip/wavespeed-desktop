@@ -9,7 +9,7 @@
  */
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useUIStore } from "../../stores/ui.store";
 import { useExecutionStore } from "../../stores/execution.store";
 import { useWorkflowStore } from "../../stores/workflow.store";
@@ -42,6 +42,25 @@ export function ResultsPanel({
   const lastResults = useExecutionStore((s) => s.lastResults);
   const [records, setRecords] = useState<NodeExecutionRecord[]>([]);
   const [prevStatus, setPrevStatus] = useState<string>("idle");
+  /** Index in lastResults/displayRecords that the user picked as active output */
+  const selectedOutputIndex = useExecutionStore((s) =>
+    nodeId ? (s.selectedOutputIndex[nodeId] ?? 0) : 0,
+  );
+
+  /** Select a specific displayRecord index as the node's active output */
+  const handleSelectAsOutput = useCallback(
+    (index: number) => {
+      if (!nodeId) return;
+      useExecutionStore.setState((s) => ({
+        selectedOutputIndex: { ...s.selectedOutputIndex, [nodeId]: index },
+      }));
+      // Also call backend IPC (no-op in browser mode, but works in Electron)
+      // For non-synthetic records, also set via IPC
+      // (we don't have executionId for synthetic records, so skip)
+    },
+    [nodeId],
+  );
+
   /** Index of the currently visible card in stacked (embedded) mode */
   const [stackIndex, setStackIndex] = useState(0);
   /** Track slide direction for animation */
@@ -151,6 +170,13 @@ export function ResultsPanel({
         }));
   const isSyntheticRecord = (id: string) => id.startsWith("last-");
 
+  // Reset stack index when new results arrive (e.g. user runs again)
+  useEffect(() => {
+    if (displayRecords.length > 0) {
+      setStackIndex(0);
+    }
+  }, [displayRecords.length, displayRecords[0]?.id]);
+
   // Extract all output URLs from a record
   const getUrls = (rec: NodeExecutionRecord): string[] => {
     const meta = rec.resultMetadata as Record<string, unknown> | null;
@@ -176,10 +202,14 @@ export function ResultsPanel({
     return [];
   };
 
-  const panelImageUrls = displayRecords
+  /** All navigable media URLs (images + videos) for the preview overlay */
+  const panelMediaUrls = displayRecords
     .filter((rec) => rec.status === "success")
     .flatMap((rec) => getUrls(rec))
-    .filter(isImageUrl);
+    .filter((u) => {
+      const t = getOutputItemType(u);
+      return t === "image" || t === "video";
+    });
 
   const handleDownload = async (url: string) => {
     // Determine correct filename with extension for any URL type
@@ -366,7 +396,7 @@ export function ResultsPanel({
                     <StackedResultItem
                       key={ui}
                       url={url}
-                      allImageUrls={panelImageUrls}
+                      allImageUrls={panelMediaUrls}
                       openPreview={openPreview}
                       onDownload={handleDownload}
                     />
@@ -414,7 +444,7 @@ export function ResultsPanel({
                         <StackedResultItem
                           key={ui}
                           url={url}
-                          allImageUrls={panelImageUrls}
+                          allImageUrls={panelMediaUrls}
                           openPreview={openPreview}
                           onDownload={handleDownload}
                         />
@@ -478,6 +508,29 @@ export function ResultsPanel({
               >
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
+              {/* Select as Output */}
+              {total > 1 && currentRec.status === "success" && (
+                <button
+                  onClick={() => {
+                    handleSelectAsOutput(clampedIndex);
+                  }}
+                  className={`ml-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                    selectedOutputIndex === clampedIndex
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                  }`}
+                  title={t("workflow.selectAsOutput", "Use as output")}
+                >
+                  {selectedOutputIndex === clampedIndex ? (
+                    <>
+                      <Check className="w-3 h-3" />{" "}
+                      {t("workflow.selectedAsOutput", "Selected")}
+                    </>
+                  ) : (
+                    t("workflow.selectAsOutput", "Use as output")
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -604,6 +657,29 @@ export function ResultsPanel({
                         : "Latest"}
                     </span>
                   )}
+                  {/* Select as Output button in full list view */}
+                  {rec.status === "success" && displayRecords.length > 1 && (
+                    <button
+                      onClick={() => {
+                        handleSelectAsOutput(idx);
+                      }}
+                      className={`ml-auto flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium transition-colors ${
+                        selectedOutputIndex === idx
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                      }`}
+                      title={t("workflow.selectAsOutput", "Use as output")}
+                    >
+                      {selectedOutputIndex === idx ? (
+                        <>
+                          <Check className="w-3 h-3" />{" "}
+                          {t("workflow.selectedAsOutput", "Selected")}
+                        </>
+                      ) : (
+                        t("workflow.selectAsOutput", "Use as output")
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Result outputs — image, video, audio, text, 3D, file */}
@@ -637,7 +713,7 @@ export function ResultsPanel({
                             <img
                               src={url}
                               alt=""
-                              onClick={() => openPreview(url, panelImageUrls)}
+                              onClick={() => openPreview(url, panelMediaUrls)}
                               className="w-full max-h-[160px] rounded border border-[hsl(var(--border))] object-contain cursor-pointer hover:ring-2 hover:ring-blue-500/40 bg-black/10"
                             />
                             <button
@@ -695,7 +771,7 @@ export function ResultsPanel({
                               src={url}
                               preload="metadata"
                               className="w-full max-h-[160px] rounded border border-[hsl(var(--border))] object-contain cursor-pointer"
-                              onClick={() => openPreview(url)}
+                              onClick={() => openPreview(url, panelMediaUrls)}
                             />
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                               <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
@@ -844,7 +920,7 @@ function StackedResultItem({
           src={url}
           preload="metadata"
           className="w-full max-h-[140px] rounded border border-[hsl(var(--border))] object-contain cursor-pointer"
-          onClick={() => openPreview(url)}
+          onClick={() => openPreview(url, allImageUrls)}
         />
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-7 h-7 rounded-full bg-black/50 flex items-center justify-center">

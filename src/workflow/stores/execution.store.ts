@@ -105,6 +105,9 @@ export interface ExecutionState {
     string,
     Array<{ urls: string[]; time: string; cost?: number; durationMs?: number }>
   >;
+  /** Per-node index into lastResults that the user picked as "active output".
+   *  When null/undefined, index 0 (latest) is used. Reset on new execution. */
+  selectedOutputIndex: Record<string, number>;
   _wasRunning: boolean;
   _lastRunType: "all" | "single" | null;
   _lastRunNodeLabel: string | null;
@@ -176,6 +179,7 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
   progressMap: {},
   errorMessages: {},
   lastResults: {},
+  selectedOutputIndex: {},
   _wasRunning: false,
   _lastRunType: null,
   _lastRunNodeLabel: null,
@@ -327,6 +331,7 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
                     ...existing,
                   ].slice(0, 50),
                 },
+                selectedOutputIndex: { ...s.selectedOutputIndex, [nodeId]: 0 },
               };
             });
             // Auto-save to My Assets
@@ -431,9 +436,13 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
     // Use full urls array so concat/multi-output nodes preserve all values
     const existingResults = new Map<string, string[]>();
     const lastResults = get().lastResults;
+    const selIdx = get().selectedOutputIndex;
     for (const [nid, groups] of Object.entries(lastResults)) {
-      if (groups && groups.length > 0 && groups[0].urls.length > 0) {
-        existingResults.set(nid, groups[0].urls);
+      if (groups && groups.length > 0) {
+        const idx = Math.min(selIdx[nid] ?? 0, groups.length - 1);
+        if (groups[idx].urls.length > 0) {
+          existingResults.set(nid, groups[idx].urls);
+        }
       }
     }
 
@@ -461,6 +470,7 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
                     ...existing,
                   ].slice(0, 50),
                 },
+                selectedOutputIndex: { ...s.selectedOutputIndex, [nid]: 0 },
               };
             });
             // Auto-save to My Assets
@@ -522,7 +532,7 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
       sourceHandle: e.sourceHandle ?? undefined,
       targetHandle: e.targetHandle ?? undefined,
     }));
-    get().runNodeInBrowser(browserNodes, browserEdges, nodeId);
+    await get().runNodeInBrowser(browserNodes, browserEdges, nodeId);
   },
   continueFrom: async (_workflowId, nodeId) => {
     const { useWorkflowStore } = await import("./workflow.store");
@@ -550,9 +560,13 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
     // Use full urls array so concat/multi-output nodes preserve all values
     const existingResults = new Map<string, string[]>();
     const lastResults = get().lastResults;
+    const selIdx2 = get().selectedOutputIndex;
     for (const [nid, groups] of Object.entries(lastResults)) {
-      if (groups && groups.length > 0 && groups[0].urls.length > 0) {
-        existingResults.set(nid, groups[0].urls);
+      if (groups && groups.length > 0) {
+        const idx = Math.min(selIdx2[nid] ?? 0, groups.length - 1);
+        if (groups[idx].urls.length > 0) {
+          existingResults.set(nid, groups[idx].urls);
+        }
       }
     }
 
@@ -609,6 +623,7 @@ export const useExecutionStore = create<ExecutionState>((set, get) => ({
                     ...existing,
                   ].slice(0, 50),
                 },
+                selectedOutputIndex: { ...s.selectedOutputIndex, [nid]: 0 },
               };
             });
             // Auto-save to My Assets

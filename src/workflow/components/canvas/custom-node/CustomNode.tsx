@@ -72,6 +72,7 @@ function CustomNodeComponent({
   const [hovered, setHovered] = useState(false);
   const [segmentPointPickerOpen, setSegmentPointPickerOpen] = useState(false);
   const [resultsExpanded, setResultsExpanded] = useState(false);
+  const [showRunCountPicker, setShowRunCountPicker] = useState(false);
   const storeModels = useModelsStore((s) => s.models);
   const getModelById = useModelsStore((s) => s.getModelById);
   const fetchModels = useModelsStore((s) => s.fetchModels);
@@ -205,6 +206,7 @@ function CustomNodeComponent({
   );
 
   const running = status === "running";
+  const runCount = (data.params.__runCount as number) || 1;
 
   const connectedSet = useMemo(() => {
     const s = new Set<string>();
@@ -597,10 +599,30 @@ function CustomNodeComponent({
     if (running) {
       cancelNode(wfId, id);
     } else if (data.nodeType?.startsWith("output/")) {
-      // Output nodes (File Export, Preview) should reuse upstream results, not re-run them
       continueFrom(wfId, id);
     } else {
-      runNode(wfId, id);
+      if (runCount > 1) {
+        // Multi-run (gacha): run N times sequentially with seed perturbation
+        const baseSeed =
+          typeof data.params.seed === "number"
+            ? data.params.seed
+            : Math.floor(Math.random() * 2147483647);
+        for (let i = 0; i < runCount; i++) {
+          const newSeed =
+            (baseSeed + i * 1000 + Math.floor(Math.random() * 999) + 1) %
+            2147483647;
+          updateNodeParams(id, {
+            ...useWorkflowStore.getState().nodes.find((n) => n.id === id)?.data
+              .params,
+            seed: newSeed,
+          });
+          // Small delay to let store update propagate
+          await new Promise((r) => setTimeout(r, 50));
+          await runNode(wfId, id);
+        }
+      } else {
+        runNode(wfId, id);
+      }
     }
   };
 
@@ -631,7 +653,10 @@ function CustomNodeComponent({
   return (
     <div
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={() => {
+        setHovered(false);
+        setShowRunCountPicker(false);
+      }}
       onWheel={onWheel}
       className="relative"
     >
@@ -658,21 +683,65 @@ function CustomNodeComponent({
             </button>
           ) : (
             <>
-              <button
-                onClick={onRun}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium shadow-lg backdrop-blur-sm bg-blue-500 text-white hover:bg-blue-600 transition-all whitespace-nowrap"
-                title={t("workflow.runNode", "Run Node")}
-              >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
+              {/* Split Run button: main area runs, chevron opens count picker */}
+              <div className="relative flex items-stretch">
+                <button
+                  onClick={onRun}
+                  className="flex items-center gap-1 pl-3 pr-2 rounded-l-full text-[11px] font-medium shadow-lg backdrop-blur-sm bg-blue-500 text-white hover:bg-blue-600 transition-all whitespace-nowrap h-[30px]"
+                  title={t("workflow.runNode", "Run Node")}
                 >
-                  <polygon points="6,3 20,12 6,21" />
-                </svg>{" "}
-                {t("workflow.run", "Run")}
-              </button>
+                  <svg
+                    width="10"
+                    height="10"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <polygon points="6,3 20,12 6,21" />
+                  </svg>{" "}
+                  {t("workflow.run", "Run")}
+                  {runCount > 1 && (
+                    <span className="text-[9px] opacity-80">×{runCount}</span>
+                  )}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRunCountPicker((v) => !v);
+                  }}
+                  className="flex items-center justify-center w-[24px] rounded-r-full shadow-lg backdrop-blur-sm bg-blue-600 text-white hover:bg-blue-700 transition-all border-l border-white/20 h-[30px]"
+                  title={t("workflow.runCount", "Run count")}
+                >
+                  <svg
+                    width="8"
+                    height="8"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <polygon points="4,8 12,18 20,8" />
+                  </svg>
+                </button>
+                {showRunCountPicker && (
+                  <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 bg-[hsl(var(--popover))] border border-[hsl(var(--border))] rounded-lg shadow-xl p-1 flex gap-0.5 z-50">
+                    {[1, 2, 3, 4, 5, 8, 10].map((n) => (
+                      <button
+                        key={n}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setParam("__runCount", n);
+                          setShowRunCountPicker(false);
+                        }}
+                        className={`w-7 h-7 rounded text-[11px] font-medium transition-colors ${
+                          runCount === n
+                            ? "bg-blue-500 text-white"
+                            : "hover:bg-accent text-foreground"
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 onClick={onRunFromHere}
                 className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-medium shadow-lg backdrop-blur-sm bg-green-600 text-white hover:bg-green-700 transition-all whitespace-nowrap"

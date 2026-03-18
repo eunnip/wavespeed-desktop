@@ -1137,6 +1137,8 @@
     "modelIdLabel": "ID model",
     "selectNode": "Pilih node untuk dikonfigurasi",
     "noExecutions": "Belum ada eksekusi",
+    "selectAsOutput": "Gunakan sebagai output",
+    "selectedAsOutput": "Terpilih",
     "budgetExceeded": "Anggaran terlampaui",
     "dailySpend": "Pengeluaran harian",
     "perExecutionLimit": "Batas per eksekusi",

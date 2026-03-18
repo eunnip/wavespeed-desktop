@@ -1468,6 +1468,8 @@
     "exportFailed": "エクスポートに失敗しました",
     "estimated": "推定コスト",
     "noExecutions": "実行履歴がまだありません",
+    "selectAsOutput": "出力として使用",
+    "selectedAsOutput": "選択済み",
     "budgetExceeded": "予算超過",
     "dailySpend": "1日の支出",
     "perExecutionLimit": "実行ごとの制限",

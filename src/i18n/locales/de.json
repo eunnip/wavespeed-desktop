@@ -1138,6 +1138,8 @@
     "modelIdLabel": "Modell-ID",
     "selectNode": "Wählen Sie einen Knoten zur Konfiguration",
     "noExecutions": "Noch keine Ausführungen",
+    "selectAsOutput": "Als Ausgabe verwenden",
+    "selectedAsOutput": "Ausgewählt",
     "budgetExceeded": "Budget überschritten",
     "dailySpend": "Tägliche Ausgaben",
     "perExecutionLimit": "Limite pro Ausführung",

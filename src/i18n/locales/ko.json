@@ -1138,6 +1138,8 @@
     "modelIdLabel": "모델 ID",
     "selectNode": "구성할 노드 선택",
     "noExecutions": "아직 실행 없음",
+    "selectAsOutput": "출력으로 사용",
+    "selectedAsOutput": "선택됨",
     "budgetExceeded": "예산 초과",
     "dailySpend": "일일 지출",
     "perExecutionLimit": "실행당 제한",
