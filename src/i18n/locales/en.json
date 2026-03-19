@@ -1174,6 +1174,8 @@
     "importWorkflow": "Import Workflow",
     "importWorkflowAsSubgraph": "Import Workflow as Subgraph",
     "noWorkflowsToImport": "No other workflows available",
+    "currentWorkflow": "current",
+    "importContainsTrigger": "Cannot import: workflow contains trigger nodes. Triggers are not allowed inside groups.",
     "nodeCountLabel": "{{count}} nodes",
     "more": "More",
     "previousImage": "Previous image",

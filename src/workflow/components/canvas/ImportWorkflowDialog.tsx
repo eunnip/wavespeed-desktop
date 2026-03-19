@@ -19,6 +19,7 @@ export function ImportWorkflowDialog({ groupId, onClose }: Props) {
   const [workflows, setWorkflows] = useState<WorkflowSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
   const currentWorkflowId = useWorkflowStore((s) => s.workflowId);
   const importWorkflowIntoGroup = useWorkflowStore(
     (s) => s.importWorkflowIntoGroup,
@@ -28,8 +29,7 @@ export function ImportWorkflowDialog({ groupId, onClose }: Props) {
     workflowIpc
       .list()
       .then((list) => {
-        // Exclude the current workflow to prevent self-import
-        setWorkflows(list.filter((w) => w.id !== currentWorkflowId));
+        setWorkflows(list);
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -43,6 +43,17 @@ export function ImportWorkflowDialog({ groupId, onClose }: Props) {
         onClose();
       } catch (err) {
         console.error("Import failed:", err);
+        if (err instanceof Error && err.message === "IMPORT_CONTAINS_TRIGGER") {
+          setImportError(
+            t(
+              "workflow.importContainsTrigger",
+              "Cannot import: workflow contains trigger nodes. Triggers are not allowed inside groups.",
+            ),
+          );
+        } else {
+          const msg = err instanceof Error ? err.message : String(err);
+          setImportError(msg);
+        }
         setImporting(null);
       }
     },
@@ -107,79 +118,96 @@ export function ImportWorkflowDialog({ groupId, onClose }: Props) {
               )}
             </div>
           ) : (
-            workflows.map((wf) => (
-              <button
-                key={wf.id}
-                disabled={importing !== null}
-                onClick={() => handleImport(wf.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                  importing === wf.id
-                    ? "bg-cyan-500/10 text-cyan-400"
-                    : "text-foreground hover:bg-muted/60"
-                } disabled:opacity-50`}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="flex-shrink-0 text-muted-foreground"
-                >
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                  <line x1="8" y1="21" x2="16" y2="21" />
-                  <line x1="12" y1="17" x2="12" y2="21" />
-                </svg>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[12px] font-medium truncate">
-                    {wf.name}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {t("workflow.nodeCountLabel", "{{count}} nodes", {
-                      count: wf.nodeCount,
-                    })}
-                    {" · "}
-                    {new Date(wf.updatedAt).toLocaleDateString()}
-                  </div>
+            <>
+              {importError && (
+                <div className="mx-1 mb-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-[11px] text-red-400">
+                  ⚠ {importError}
                 </div>
-                {importing === wf.id ? (
-                  <svg
-                    className="animate-spin flex-shrink-0 text-cyan-400"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
+              )}
+              {workflows.map((wf) => {
+                const isSelf = wf.id === currentWorkflowId;
+                return (
+                  <button
+                    key={wf.id}
+                    disabled={importing !== null || isSelf}
+                    onClick={() => handleImport(wf.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                      isSelf
+                        ? "opacity-40 cursor-not-allowed"
+                        : importing === wf.id
+                          ? "bg-cyan-500/10 text-cyan-400"
+                          : "text-foreground hover:bg-muted/60"
+                    } disabled:opacity-50`}
                   >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      strokeDasharray="60"
-                      strokeDashoffset="20"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="flex-shrink-0 text-muted-foreground/50"
-                  >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                )}
-              </button>
-            ))
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="flex-shrink-0 text-muted-foreground"
+                    >
+                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                      <line x1="8" y1="21" x2="16" y2="21" />
+                      <line x1="12" y1="17" x2="12" y2="21" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-medium truncate">
+                        {wf.name}
+                        {isSelf && (
+                          <span className="ml-1.5 text-[10px] text-muted-foreground font-normal">
+                            ({t("workflow.currentWorkflow", "current")})
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {t("workflow.nodeCountLabel", "{{count}} nodes", {
+                          count: wf.nodeCount,
+                        })}
+                        {" · "}
+                        {new Date(wf.updatedAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    {importing === wf.id ? (
+                      <svg
+                        className="animate-spin flex-shrink-0 text-cyan-400"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          strokeDasharray="60"
+                          strokeDashoffset="20"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="flex-shrink-0 text-muted-foreground/50"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </>
           )}
         </div>
       </div>

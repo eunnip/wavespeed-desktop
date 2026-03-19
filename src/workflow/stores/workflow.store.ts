@@ -1941,6 +1941,17 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     const srcEdges = srcWf.graphDefinition.edges;
     if (srcNodes.length === 0) return;
 
+    // Reject workflows that contain trigger nodes — triggers cannot run inside a group
+    const triggerNode = srcNodes.find((sn) =>
+      sn.nodeType.startsWith("trigger/"),
+    );
+    if (triggerNode) {
+      const err = new Error("IMPORT_CONTAINS_TRIGGER");
+      (err as unknown as Record<string, string>).triggerType =
+        triggerNode.nodeType;
+      throw err;
+    }
+
     pushUndo({ nodes, edges });
 
     // Build old→new ID mapping for cloned nodes
