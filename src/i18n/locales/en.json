@@ -1451,10 +1451,6 @@
       "control/group": {
         "label": "Group",
         "hint": "Group nodes into a sub-workflow for organization"
-      },
-      "input/directory-import": {
-        "label": "Directory Import",
-        "hint": "Scan a local folder and import matching media files as an array"
       }
     },
     "modelSelector": {

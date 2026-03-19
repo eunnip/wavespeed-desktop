@@ -1360,10 +1360,6 @@
       "control/iterator": {
         "label": "Iterador",
         "hint": "Iterar sobre entradas — ejecutar nodos hijos N veces o una vez por elemento del array"
-      },
-      "input/directory-import": {
-        "label": "Importar directorio",
-        "hint": "Escanear una carpeta local e importar archivos multimedia coincidentes como array"
       }
     },
     "modelSelector": {

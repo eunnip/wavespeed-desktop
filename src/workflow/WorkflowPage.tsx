@@ -654,6 +654,8 @@ export function WorkflowPage() {
           edges,
           isDirty: false,
         });
+        // Exit subgraph editing when closing the last tab
+        useUIStore.getState().exitGroupEdit();
         setTabs([
           {
             tabId: newTabId,
@@ -683,6 +685,8 @@ export function WorkflowPage() {
           >["edges"],
           isDirty: target.isDirty,
         });
+        // Exit subgraph editing when closing the active tab
+        useUIStore.getState().exitGroupEdit();
         setActiveTabId(target.tabId);
       }
     },
@@ -743,6 +747,8 @@ export function WorkflowPage() {
           >["edges"],
           isDirty: target.isDirty,
         });
+        // Exit subgraph editing when closing multiple tabs including the active one
+        useUIStore.getState().exitGroupEdit();
         setActiveTabId(target.tabId);
       }
     },

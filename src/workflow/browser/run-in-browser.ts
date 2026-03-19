@@ -607,7 +607,6 @@ export async function executeWorkflowInBrowser(
     // Stop the entire workflow if any node has failed
     if (failedNodes.size > 0) break;
     // Yield to the event loop between levels so React can flush UI updates
-    // (prevents perceived "freeze" between e.g. directory-import completing and iterator starting)
     await new Promise<void>((r) => setTimeout(r, 0));
     await Promise.all(
       level.map(async (nodeId) => {
@@ -765,94 +764,6 @@ export async function executeWorkflowInBrowser(
             callbacks.onNodeStatus(nodeId, "confirmed");
             callbacks.onNodeComplete(nodeId, {
               urls: [text],
-              cost: 0,
-              durationMs: Date.now() - start,
-            });
-            return;
-          }
-
-          if (nodeType === "input/directory-import") {
-            const dirPath = String(params.directoryPath ?? "").trim();
-            if (!dirPath)
-              throw new Error(
-                "No directory selected. Please choose a directory.",
-              );
-
-            const mediaType = String(params.mediaType ?? "image");
-
-            const MEDIA_EXTS: Record<string, string[]> = {
-              image: [
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".webp",
-                ".gif",
-                ".bmp",
-                ".tiff",
-                ".tif",
-                ".svg",
-                ".avif",
-              ],
-              video: [
-                ".mp4",
-                ".webm",
-                ".mov",
-                ".avi",
-                ".mkv",
-                ".flv",
-                ".wmv",
-                ".m4v",
-              ],
-              audio: [".mp3", ".wav", ".flac", ".m4a", ".ogg", ".aac", ".wma"],
-              all: [],
-            };
-            MEDIA_EXTS.all = [
-              ...MEDIA_EXTS.image,
-              ...MEDIA_EXTS.video,
-              ...MEDIA_EXTS.audio,
-            ];
-
-            let urls: string[] = [];
-            try {
-              const api = (window as unknown as Record<string, unknown>)
-                .electronAPI as
-                | {
-                    scanDirectory?: (
-                      path: string,
-                      exts: string[],
-                    ) => Promise<string[]>;
-                  }
-                | undefined;
-              if (api?.scanDirectory) {
-                const files = await api.scanDirectory(
-                  dirPath,
-                  MEDIA_EXTS[mediaType] ?? MEDIA_EXTS.all,
-                );
-                // Convert raw file paths to local-asset:// URLs (consistent with electron handler)
-                urls = files
-                  .sort()
-                  .map((f) => `local-asset://${encodeURIComponent(f)}`);
-              } else {
-                throw new Error("Directory scanning requires the desktop app.");
-              }
-            } catch (err) {
-              throw new Error(
-                `Failed to scan directory: ${err instanceof Error ? err.message : String(err)}`,
-              );
-            }
-
-            results.set(nodeId, {
-              outputUrl: urls[0] ?? "",
-              resultMetadata: {
-                output: urls,
-                resultUrl: urls[0] ?? "",
-                resultUrls: urls,
-                fileCount: urls.length,
-              },
-            });
-            callbacks.onNodeStatus(nodeId, "confirmed");
-            callbacks.onNodeComplete(nodeId, {
-              urls: urls.length > 0 ? urls : [""],
               cost: 0,
               durationMs: Date.now() - start,
             });

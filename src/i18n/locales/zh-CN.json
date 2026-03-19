@@ -1442,10 +1442,6 @@
       "control/group": {
         "label": "分组",
         "hint": "将节点分组为子工作流，便于组织管理"
-      },
-      "input/directory-import": {
-        "label": "目录导入",
-        "hint": "扫描本地文件夹，将匹配的媒体文件导入为数组"
       }
     },
     "modelSelector": {

@@ -22,7 +22,6 @@ import {
   Download,
   GitMerge,
   ListFilter,
-  FolderOpen,
   Repeat,
   FolderSearch,
   Globe,
@@ -47,7 +46,7 @@ const NODE_ICON_MAP: Record<string, LucideIcon> = {
   // Input
   "input/media-upload": Upload,
   "input/text-input": Type,
-  "input/directory-import": FolderOpen,
+
   // AI Task
   "ai-task/run": Cpu,
   // Output

@@ -366,7 +366,6 @@ export function CustomNodeBody(props: CustomNodeBodyProps) {
           })}
         {data.nodeType !== "input/media-upload" &&
           data.nodeType !== "input/text-input" &&
-          data.nodeType !== "input/directory-import" &&
           paramDefs.map((p) => {
             const hid = `param-${p.key}`;
             const canConnect =
@@ -506,16 +505,6 @@ export function CustomNodeBody(props: CustomNodeBodyProps) {
       {/* Text Input node — special UI */}
       {data.nodeType === "input/text-input" && (
         <TextInputBody
-          params={data.params}
-          onParamChange={(updates) => {
-            updateNodeParams(id, { ...data.params, ...updates });
-          }}
-        />
-      )}
-
-      {/* Directory Import node — special UI */}
-      {data.nodeType === "input/directory-import" && (
-        <DirectoryImportBody
           params={data.params}
           onParamChange={(updates) => {
             updateNodeParams(id, { ...data.params, ...updates });
@@ -1035,7 +1024,6 @@ export function CustomNodeBody(props: CustomNodeBodyProps) {
 
       {inputDefs.map((inp) => {
         if (data.nodeType === "input/media-upload") return null;
-        if (data.nodeType === "input/directory-import") return null;
         if (data.nodeType === "output/http-response") return null;
         const hid = `input-${inp.key}`;
         const conn = connectedSet.has(hid);
@@ -1251,7 +1239,6 @@ export function CustomNodeBody(props: CustomNodeBodyProps) {
       {/* defParams */}
       {data.nodeType !== "input/media-upload" &&
         data.nodeType !== "input/text-input" &&
-        data.nodeType !== "input/directory-import" &&
         data.nodeType !== "trigger/directory" &&
         paramDefs.map((p) => {
           // Skip fields managed by DynamicFieldsEditor
