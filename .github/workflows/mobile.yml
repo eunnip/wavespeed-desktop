@@ -148,7 +148,7 @@ jobs:
           echo ""
           echo "▶ Check 3: Dependency sync"
           # Desktop-only dependencies that mobile doesn't need (e.g. workflow/electron-only)
-          DESKTOP_ONLY_DEPS="sql.js json-stable-stringify uuid @google/model-viewer better-sqlite3"
+          DESKTOP_ONLY_DEPS="sql.js json-stable-stringify uuid @google/model-viewer better-sqlite3 7zip-bin"
 
           if echo "$CHANGED_FILES" | grep -q "^package.json$"; then
             PREV_DEPS=$(git show "$PREV_TAG":package.json 2>/dev/null | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')); console.log(Object.keys(d.dependencies||{}).sort().join('\n'))")
