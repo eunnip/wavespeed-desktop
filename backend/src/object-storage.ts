@@ -21,7 +21,10 @@ type R2Config = {
 };
 
 export class LocalObjectStorage implements ObjectStorage {
-  constructor(private readonly rootDir: string) {
+  private readonly rootDir: string;
+
+  constructor(rootDir: string) {
+    this.rootDir = rootDir;
     fs.mkdirSync(rootDir, { recursive: true });
   }
 
@@ -44,8 +47,10 @@ export class R2ObjectStorage implements ObjectStorage {
   private readonly bucket: string;
   private readonly host: string;
   private readonly endpoint: string;
+  private readonly config: R2Config;
 
-  constructor(private readonly config: R2Config) {
+  constructor(config: R2Config) {
+    this.config = config;
     this.bucket = config.bucket;
     this.host = config.endpoint
       ? new URL(config.endpoint).host

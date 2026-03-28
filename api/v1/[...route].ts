@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { handleNodeRequest } from "../../backend/src/node-adapter.ts";
 import { getBackendApp } from "../../backend/src/runtime.ts";
 
