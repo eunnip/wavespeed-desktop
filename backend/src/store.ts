@@ -388,7 +388,12 @@ export class SupabaseStore implements Store {
       return undefined as T;
     }
 
-    return (await response.json()) as T;
+    const text = await response.text();
+    if (!text.trim()) {
+      return undefined as T;
+    }
+
+    return JSON.parse(text) as T;
   }
 
   async findUserByAppleSubject(appleSubject: string): Promise<UserRecord | undefined> {
