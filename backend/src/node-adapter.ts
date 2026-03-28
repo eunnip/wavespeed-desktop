@@ -47,6 +47,9 @@ function readNodeBody(request: IncomingMessage): Promise<Uint8Array> {
     rawBody?: Buffer | Uint8Array | string;
   }).rawBody;
 
+  const isBinaryBody = (value: unknown): value is Buffer | Uint8Array | ArrayBuffer =>
+    value instanceof Uint8Array || value instanceof ArrayBuffer;
+
   if (rawBody !== undefined) {
     if (requestPath.includes("/v1/auth/sign-in/apple")) {
       console.log(JSON.stringify({ adapter: "rawBody", rawBodyType: typeof rawBody }));
@@ -58,28 +61,21 @@ function readNodeBody(request: IncomingMessage): Promise<Uint8Array> {
   }
 
   if (knownBody !== undefined) {
-    const serialized =
-      typeof knownBody === "string"
-        ? knownBody
-        : knownBody instanceof Uint8Array
-          ? Buffer.from(knownBody).toString("utf8")
-          : JSON.stringify(knownBody);
-    if (requestPath.includes("/v1/auth/sign-in/apple")) {
-      console.log(
-        JSON.stringify({
-          adapter: "knownBody",
-          bodyConstructor: knownBody?.constructor?.name ?? null,
-          serializedPreview: serialized?.slice(0, 120) ?? null,
-        }),
-      );
-    }
     if (typeof knownBody === "string") {
       return Promise.resolve(Buffer.from(knownBody));
     }
-    if (knownBody instanceof Uint8Array) {
+    if (isBinaryBody(knownBody)) {
       return Promise.resolve(Buffer.from(knownBody));
     }
-    return Promise.resolve(Buffer.from(serialized));
+    if (requestPath.includes("/v1/auth/sign-in/apple")) {
+      console.log(
+        JSON.stringify({
+          adapter: "fallbackStream",
+          bodyConstructor: knownBody?.constructor?.name ?? null,
+          reason: "unsupported_known_body",
+        }),
+      );
+    }
   }
 
   return new Promise((resolve, reject) => {
