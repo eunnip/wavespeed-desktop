@@ -5,7 +5,12 @@ import type { BackendApp } from "./app.ts";
 async function toRequest(request: IncomingMessage): Promise<Request> {
   const protocol = request.headers["x-forwarded-proto"] ?? "http";
   const host = request.headers.host ?? "127.0.0.1";
-  const url = `${protocol}://${host}${request.url ?? "/"}`;
+  const url = new URL(`${protocol}://${host}${request.url ?? "/"}`);
+  const pathnameOverride = url.searchParams.get("__pathname");
+  if (pathnameOverride) {
+    url.pathname = pathnameOverride.startsWith("/") ? pathnameOverride : `/${pathnameOverride}`;
+    url.searchParams.delete("__pathname");
+  }
 
   const headers = new Headers();
   for (const [key, value] of Object.entries(request.headers)) {

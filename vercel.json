@@ -1,6 +1,9 @@
 {
   "outputDirectory": "out/renderer",
   "functions": {
+    "api/backend.ts": {
+      "includeFiles": "backend/src/**"
+    },
     "api/health.ts": {
       "includeFiles": "backend/src/**"
     },
@@ -20,23 +23,11 @@
   "rewrites": [
     {
       "source": "/health",
-      "destination": "/api/health"
-    },
-    {
-      "source": "/v1/auth/:path*",
-      "destination": "/api/v1/auth/:path*"
-    },
-    {
-      "source": "/v1/jobs/:path*",
-      "destination": "/api/v1/jobs/:path*"
-    },
-    {
-      "source": "/v1/uploads/:path*",
-      "destination": "/api/v1/uploads/:path*"
+      "destination": "/api/backend?__pathname=/health"
     },
     {
       "source": "/v1/:path*",
-      "destination": "/api/v1/:path*"
+      "destination": "/api/backend?__pathname=/v1/:path*"
     }
   ]
 }

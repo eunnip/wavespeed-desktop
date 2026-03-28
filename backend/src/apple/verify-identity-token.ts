@@ -32,7 +32,7 @@ type VerifyAppleIdentityTokenOptions = {
 };
 
 type AppleJwkSet = {
-  keys?: JsonWebKey[];
+  keys?: Array<JsonWebKey & { kid?: string }>;
 };
 
 const encoder = new TextEncoder();
