@@ -139,7 +139,7 @@ export class R2ObjectStorage implements ObjectStorage {
     return fetch(url, {
       method,
       headers,
-      body,
+      body: body ? Buffer.from(body) : undefined,
     });
   }
 
@@ -162,7 +162,7 @@ export class R2ObjectStorage implements ObjectStorage {
   }
 
   private toDateStamp(date: Date): string {
-    return date.toISOString().slice(0, 10).replaceAll("-", "");
+    return date.toISOString().slice(0, 10).replace(/-/g, "");
   }
 
   private encodeKey(key: string): string {

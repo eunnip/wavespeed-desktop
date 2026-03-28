@@ -39,8 +39,12 @@ function createObjectStorage(): ObjectStorage {
 
 export function getBackendApp(): BackendApp {
   if (!cachedApp) {
+    const appConfig = {
+      ...config,
+      mode: config.mode as "development" | "production",
+    };
     cachedApp = createBackendApp({
-      config,
+      config: appConfig,
       store: createStore(),
       objectStorage: createObjectStorage(),
     });

@@ -97,7 +97,7 @@ function binaryResponse(
   body: Uint8Array,
   contentType: string,
 ): Response {
-  return new Response(body, {
+  return new Response(Buffer.from(body), {
     status: 200,
     headers: {
       "Content-Type": contentType,
@@ -710,7 +710,7 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
     if (context.method === "POST" && context.url.pathname === "/v1/uploads") {
       const user = ensureAuthenticated(context);
       const body = await readBodyBuffer(request);
-      const file = parseMultipartFile(request.headers.get("content-type"), body);
+      const file = parseMultipartFile(request.headers.get("content-type") ?? undefined, body);
       if (!file) {
         throw { status: 422, message: "A multipart file upload is required" } satisfies AppError;
       }

@@ -28,7 +28,7 @@ async function toRequest(request: IncomingMessage): Promise<Request> {
     headers,
     body,
     duplex: "half",
-  });
+  } as RequestInit);
 }
 
 function readNodeBody(request: IncomingMessage): Promise<Uint8Array> {
