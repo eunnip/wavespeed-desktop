@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "out/renderer",
   "rewrites": [
     {
       "source": "/health",
