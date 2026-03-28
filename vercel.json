@@ -4,6 +4,15 @@
     "api/health.ts": {
       "includeFiles": "backend/src/**"
     },
+    "api/v1/auth/[...route].ts": {
+      "includeFiles": "backend/src/**"
+    },
+    "api/v1/jobs/[...route].ts": {
+      "includeFiles": "backend/src/**"
+    },
+    "api/v1/uploads/[...route].ts": {
+      "includeFiles": "backend/src/**"
+    },
     "api/v1/[...route].ts": {
       "includeFiles": "backend/src/**"
     }
@@ -12,6 +21,18 @@
     {
       "source": "/health",
       "destination": "/api/health"
+    },
+    {
+      "source": "/v1/auth/:path*",
+      "destination": "/api/v1/auth/:path*"
+    },
+    {
+      "source": "/v1/jobs/:path*",
+      "destination": "/api/v1/jobs/:path*"
+    },
+    {
+      "source": "/v1/uploads/:path*",
+      "destination": "/api/v1/uploads/:path*"
     },
     {
       "source": "/v1/:path*",
