@@ -1,5 +1,13 @@
 {
   "outputDirectory": "out/renderer",
+  "functions": {
+    "api/health.ts": {
+      "includeFiles": "backend/src/**"
+    },
+    "api/v1/[...route].ts": {
+      "includeFiles": "backend/src/**"
+    }
+  },
   "rewrites": [
     {
       "source": "/health",
