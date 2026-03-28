@@ -37,6 +37,32 @@ async function toRequest(request: IncomingMessage): Promise<Request> {
 }
 
 function readNodeBody(request: IncomingMessage): Promise<Uint8Array> {
+  const knownBody = (request as IncomingMessage & {
+    body?: unknown;
+    rawBody?: Buffer | Uint8Array | string;
+  }).body;
+  const rawBody = (request as IncomingMessage & {
+    body?: unknown;
+    rawBody?: Buffer | Uint8Array | string;
+  }).rawBody;
+
+  if (rawBody !== undefined) {
+    if (typeof rawBody === "string") {
+      return Promise.resolve(Buffer.from(rawBody));
+    }
+    return Promise.resolve(Buffer.from(rawBody));
+  }
+
+  if (knownBody !== undefined) {
+    if (typeof knownBody === "string") {
+      return Promise.resolve(Buffer.from(knownBody));
+    }
+    if (knownBody instanceof Uint8Array) {
+      return Promise.resolve(Buffer.from(knownBody));
+    }
+    return Promise.resolve(Buffer.from(JSON.stringify(knownBody)));
+  }
+
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     request.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
