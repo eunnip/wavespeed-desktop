@@ -1,0 +1,402 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* ClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* ClientApp.swift */; };
+		A10000000000000000000002 /* AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* AppSession.swift */; };
+		A10000000000000000000003 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* KeychainStore.swift */; };
+		A10000000000000000000004 /* LocalAssetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* LocalAssetStore.swift */; };
+		A10000000000000000000005 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* RootView.swift */; };
+		A10000000000000000000006 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* SignInView.swift */; };
+		A10000000000000000000007 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* MainTabView.swift */; };
+		A10000000000000000000008 /* CreateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* CreateView.swift */; };
+		A10000000000000000000009 /* ComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* ComposerView.swift */; };
+		A1000000000000000000000A /* ActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* ActivityView.swift */; };
+		A1000000000000000000000B /* JobDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000B /* JobDetailView.swift */; };
+		A1000000000000000000000C /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* LibraryView.swift */; };
+		A1000000000000000000000D /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000D /* AccountView.swift */; };
+		A1000000000000000000000E /* APIConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* APIConfiguration.swift */; };
+		A1000000000000000000000F /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* APIError.swift */; };
+		A10000000000000000000010 /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* JSONValue.swift */; };
+		A10000000000000000000011 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* Models.swift */; };
+		A10000000000000000000012 /* HTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* HTTPClient.swift */; };
+		A10000000000000000000013 /* BackendAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* BackendAPI.swift */; };
+		A10000000000000000000014 /* AuthClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* AuthClient.swift */; };
+		A10000000000000000000015 /* CatalogClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* CatalogClient.swift */; };
+		A10000000000000000000016 /* JobsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* JobsClient.swift */; };
+		A10000000000000000000017 /* PreferencesClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* PreferencesClient.swift */; };
+		A10000000000000000000018 /* UploadsClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* UploadsClient.swift */; };
+		A10000000000000000000019 /* AuthState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* AuthState.swift */; };
+		A1000000000000000000001A /* AuthGatewayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* AuthGatewayView.swift */; };
+		A1000000000000000000001B /* SignInWithAppleButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* SignInWithAppleButtonView.swift */; };
+		A1000000000000000000001C /* StoreKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* StoreKitService.swift */; };
+		A1000000000000000000001D /* SubscriptionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* SubscriptionViewModel.swift */; };
+		A1000000000000000000001E /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* PaywallView.swift */; };
+		A1000000000000000000001F /* ManageSubscriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* ManageSubscriptionView.swift */; };
+		A10000000000000000000020 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A20000000000000000000001 /* ClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientApp.swift; sourceTree = "<group>"; };
+		A20000000000000000000002 /* AppSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSession.swift; sourceTree = "<group>"; };
+		A20000000000000000000003 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		A20000000000000000000004 /* LocalAssetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAssetStore.swift; sourceTree = "<group>"; };
+		A20000000000000000000005 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		A20000000000000000000006 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		A20000000000000000000007 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		A20000000000000000000008 /* CreateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateView.swift; sourceTree = "<group>"; };
+		A20000000000000000000009 /* ComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000A /* ActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000B /* JobDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobDetailView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000C /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000D /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000F /* APIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIConfiguration.swift; path = BackendAPI/Sources/BackendAPI/APIConfiguration.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000010 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIError.swift; path = BackendAPI/Sources/BackendAPI/APIError.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000011 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = JSONValue.swift; path = BackendAPI/Sources/BackendAPI/JSONValue.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000012 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Models.swift; path = BackendAPI/Sources/BackendAPI/Models.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000013 /* HTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HTTPClient.swift; path = BackendAPI/Sources/BackendAPI/HTTPClient.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000014 /* BackendAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BackendAPI.swift; path = BackendAPI/Sources/BackendAPI/BackendAPI.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000015 /* AuthClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AuthClient.swift; path = BackendAPI/Sources/BackendAPI/AuthClient.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000016 /* CatalogClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CatalogClient.swift; path = BackendAPI/Sources/BackendAPI/CatalogClient.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000017 /* JobsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = JobsClient.swift; path = BackendAPI/Sources/BackendAPI/JobsClient.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000018 /* PreferencesClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PreferencesClient.swift; path = BackendAPI/Sources/BackendAPI/PreferencesClient.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000019 /* UploadsClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = UploadsClient.swift; path = BackendAPI/Sources/BackendAPI/UploadsClient.swift; sourceTree = SOURCE_ROOT; };
+		A2000000000000000000001A /* AuthState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthState.swift; sourceTree = "<group>"; };
+		A2000000000000000000001B /* AuthGatewayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthGatewayView.swift; sourceTree = "<group>"; };
+		A2000000000000000000001C /* SignInWithAppleButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInWithAppleButtonView.swift; sourceTree = "<group>"; };
+		A2000000000000000000001D /* StoreKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreKitService.swift; sourceTree = "<group>"; };
+		A2000000000000000000001E /* SubscriptionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionViewModel.swift; sourceTree = "<group>"; };
+		A2000000000000000000001F /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		A20000000000000000000020 /* ManageSubscriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManageSubscriptionView.swift; sourceTree = "<group>"; };
+		A20000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000000000000000000022 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Config/Debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000023 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Config/Release.xcconfig; sourceTree = SOURCE_ROOT; };
+		A2000000000000000000000E /* WaveSpeedIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = WaveSpeedIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A30000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A40000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000002 /* ClientApp */,
+				A20000000000000000000022 /* Debug.xcconfig */,
+				A20000000000000000000023 /* Release.xcconfig */,
+				A40000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A40000000000000000000002 /* ClientApp */ = {
+			isa = PBXGroup;
+			path = ClientApp;
+			sourceTree = "<group>";
+			children = (
+				A20000000000000000000001 /* ClientApp.swift */,
+				A20000000000000000000002 /* AppSession.swift */,
+				A20000000000000000000003 /* KeychainStore.swift */,
+				A20000000000000000000004 /* LocalAssetStore.swift */,
+				A20000000000000000000005 /* RootView.swift */,
+				A20000000000000000000006 /* SignInView.swift */,
+				A20000000000000000000007 /* MainTabView.swift */,
+				A20000000000000000000008 /* CreateView.swift */,
+				A20000000000000000000009 /* ComposerView.swift */,
+				A2000000000000000000000A /* ActivityView.swift */,
+				A2000000000000000000000B /* JobDetailView.swift */,
+				A2000000000000000000000C /* LibraryView.swift */,
+				A2000000000000000000000D /* AccountView.swift */,
+				A2000000000000000000001A /* AuthState.swift */,
+				A2000000000000000000001B /* AuthGatewayView.swift */,
+				A2000000000000000000001C /* SignInWithAppleButtonView.swift */,
+				A2000000000000000000001D /* StoreKitService.swift */,
+				A2000000000000000000001E /* SubscriptionViewModel.swift */,
+				A2000000000000000000001F /* PaywallView.swift */,
+				A20000000000000000000020 /* ManageSubscriptionView.swift */,
+				A20000000000000000000021 /* Assets.xcassets */,
+				A2000000000000000000000F /* APIConfiguration.swift */,
+				A20000000000000000000010 /* APIError.swift */,
+				A20000000000000000000011 /* JSONValue.swift */,
+				A20000000000000000000012 /* Models.swift */,
+				A20000000000000000000013 /* HTTPClient.swift */,
+				A20000000000000000000014 /* BackendAPI.swift */,
+				A20000000000000000000015 /* AuthClient.swift */,
+				A20000000000000000000016 /* CatalogClient.swift */,
+				A20000000000000000000017 /* JobsClient.swift */,
+				A20000000000000000000018 /* PreferencesClient.swift */,
+				A20000000000000000000019 /* UploadsClient.swift */,
+			);
+		};
+		A40000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A2000000000000000000000E /* WaveSpeedIOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000000000000000000001 /* WaveSpeedIOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000000000000000000002 /* Build configuration list for PBXNativeTarget "WaveSpeedIOS" */;
+			buildPhases = (
+				A30000000000000000000001 /* Frameworks */,
+				A30000000000000000000002 /* Sources */,
+				A30000000000000000000003 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WaveSpeedIOS;
+			packageProductDependencies = (
+			);
+			productName = WaveSpeedIOS;
+			productReference = A2000000000000000000000E /* WaveSpeedIOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A70000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2610;
+				LastUpgradeCheck = 2610;
+				TargetAttributes = {
+					A50000000000000000000001 = {
+						CreatedOnToolsVersion = 26.1;
+					};
+				};
+			};
+			buildConfigurationList = A70000000000000000000001B /* Build configuration list for PBXProject "WaveSpeedIOS" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A40000000000000000000001;
+			packageReferences = (
+			);
+			productRefGroup = A40000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A50000000000000000000001 /* WaveSpeedIOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A30000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000020 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A30000000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000001 /* ClientApp.swift in Sources */,
+				A10000000000000000000002 /* AppSession.swift in Sources */,
+				A10000000000000000000003 /* KeychainStore.swift in Sources */,
+				A10000000000000000000004 /* LocalAssetStore.swift in Sources */,
+				A10000000000000000000005 /* RootView.swift in Sources */,
+				A10000000000000000000006 /* SignInView.swift in Sources */,
+				A10000000000000000000007 /* MainTabView.swift in Sources */,
+				A10000000000000000000008 /* CreateView.swift in Sources */,
+				A10000000000000000000009 /* ComposerView.swift in Sources */,
+				A1000000000000000000000A /* ActivityView.swift in Sources */,
+				A1000000000000000000000B /* JobDetailView.swift in Sources */,
+				A1000000000000000000000C /* LibraryView.swift in Sources */,
+				A1000000000000000000000D /* AccountView.swift in Sources */,
+				A1000000000000000000000E /* APIConfiguration.swift in Sources */,
+				A1000000000000000000000F /* APIError.swift in Sources */,
+				A10000000000000000000010 /* JSONValue.swift in Sources */,
+				A10000000000000000000011 /* Models.swift in Sources */,
+				A10000000000000000000012 /* HTTPClient.swift in Sources */,
+				A10000000000000000000013 /* BackendAPI.swift in Sources */,
+				A10000000000000000000014 /* AuthClient.swift in Sources */,
+				A10000000000000000000015 /* CatalogClient.swift in Sources */,
+				A10000000000000000000016 /* JobsClient.swift in Sources */,
+				A10000000000000000000017 /* PreferencesClient.swift in Sources */,
+				A10000000000000000000018 /* UploadsClient.swift in Sources */,
+				A10000000000000000000019 /* AuthState.swift in Sources */,
+				A1000000000000000000001A /* AuthGatewayView.swift in Sources */,
+				A1000000000000000000001B /* SignInWithAppleButtonView.swift in Sources */,
+				A1000000000000000000001C /* StoreKitService.swift in Sources */,
+				A1000000000000000000001D /* SubscriptionViewModel.swift in Sources */,
+				A1000000000000000000001E /* PaywallView.swift in Sources */,
+				A1000000000000000000001F /* ManageSubscriptionView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A70000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A20000000000000000000022 /* Debug.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+			name = Debug;
+		};
+		A70000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A20000000000000000000023 /* Release.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A70000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A20000000000000000000022 /* Debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(APP_CURRENT_PROJECT_VERSION)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(APP_DISPLAY_NAME)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save generated outputs to your library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select an image to use as generation input.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Capture a photo to use as generation input.";
+				INFOPLIST_KEY_WSBackendBaseURL = "$(WS_BACKEND_BASE_URL)";
+				INFOPLIST_KEY_WSEnvironmentName = "$(WS_ENVIRONMENT_NAME)";
+				INFOPLIST_KEY_WSSubscriptionProductIDs = "$(WS_SUBSCRIPTION_PRODUCT_IDS)";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_MARKETING_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A70000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A20000000000000000000023 /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(APP_CURRENT_PROJECT_VERSION)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(APP_DISPLAY_NAME)";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save generated outputs to your library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select an image to use as generation input.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Capture a photo to use as generation input.";
+				INFOPLIST_KEY_WSBackendBaseURL = "$(WS_BACKEND_BASE_URL)";
+				INFOPLIST_KEY_WSEnvironmentName = "$(WS_ENVIRONMENT_NAME)";
+				INFOPLIST_KEY_WSSubscriptionProductIDs = "$(WS_SUBSCRIPTION_PRODUCT_IDS)";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_MARKETING_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A70000000000000000000001B /* Build configuration list for PBXProject "WaveSpeedIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A70000000000000000000003 /* Debug */,
+				A70000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A70000000000000000000002 /* Build configuration list for PBXNativeTarget "WaveSpeedIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A70000000000000000000005 /* Debug */,
+				A70000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = A70000000000000000000001 /* Project object */;
+}

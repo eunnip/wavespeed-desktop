@@ -100,6 +100,9 @@ workflow-data/
 out-test/
 README.zh-CN.md
 
+# SwiftPM (iOS package)
+ios/InferenceAPI/.build/
+
 # Mobile (Capacitor/Android)
 mobile/SESSION_LOG*.md
 mobile/android/app/build/
@@ -109,3 +112,4 @@ mobile/android/local.properties
 mobile/android/.idea/
 mobile/android/*.iml
 mobile/dist/
+.vercel

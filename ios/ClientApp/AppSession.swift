@@ -1,0 +1,613 @@
+import Foundation
+import SwiftUI
+
+enum AuthFailureReason: String {
+    case invalidBackendURL
+    case unauthorized
+    case refreshExpired
+    case networkUnavailable
+    case backendUnavailable
+    case unknown
+
+    var guidance: String {
+        switch self {
+        case .invalidBackendURL:
+            return "Enter a valid backend URL or switch to mock mode for local iOS development."
+        case .unauthorized:
+            return "Your session is no longer valid. Sign in again to continue."
+        case .refreshExpired:
+            return "The saved refresh token can no longer renew this session. Sign in again."
+        case .networkUnavailable:
+            return "The backend could not be reached. Check connectivity and try again."
+        case .backendUnavailable:
+            return "The backend returned an error. Check the server logs and request ID if available."
+        case .unknown:
+            return "Review the backend response and try again."
+        }
+    }
+}
+
+@MainActor
+final class AppSession: ObservableObject {
+    @Published var backendURLString: String
+    @Published var sessionTokens: SessionTokens?
+    @Published var authState: AuthState
+    @Published var user: UserProfile?
+    @Published var entitlement: EntitlementSummary?
+    @Published var entitlementState = EntitlementState()
+    @Published var storeKitState = StoreKitState()
+    @Published var appConfig = AppConfig()
+    @Published var catalog: [CatalogModel] = []
+    @Published var jobs: [Job] = []
+    @Published var localAssets: [LocalAsset] = []
+    @Published var isBootstrapping = true
+    @Published var isBusy = false
+    @Published var presentPaywall = false
+    @Published var errorText: String?
+    @Published var authFailureReason: AuthFailureReason?
+
+    private let documentsStore = LocalAssetStore()
+    private var tokenRefreshTask: Task<SessionTokens, Error>?
+
+    init() {
+        let defaultBackendURL = Bundle.main.object(forInfoDictionaryKey: "WSBackendBaseURL") as? String
+        self.backendURLString = UserDefaults.standard.string(forKey: "backend_url") ?? defaultBackendURL ?? "https://example.com"
+        let storedSessionTokens = KeychainStore.loadSessionTokens()
+        let storedAccessToken = storedSessionTokens?.accessToken ?? KeychainStore.loadAccessToken()
+        let storedRefreshToken = storedSessionTokens?.refreshToken ?? KeychainStore.loadRefreshToken()
+        self.sessionTokens = storedSessionTokens ?? (storedAccessToken.isEmpty
+            ? nil
+            : SessionTokens(accessToken: storedAccessToken, refreshToken: storedRefreshToken))
+        self.authState = storedAccessToken.isEmpty ? .signedOut : .restoring
+        self.localAssets = documentsStore.loadAssets()
+        self.storeKitState.productIDs = subscriptionProductIDs
+    }
+
+    var isAuthenticated: Bool {
+        !(sessionTokens?.accessToken.isEmpty ?? true)
+    }
+
+    var accessToken: String {
+        sessionTokens?.accessToken ?? ""
+    }
+
+    var refreshToken: String {
+        sessionTokens?.refreshToken ?? ""
+    }
+
+    var backendURL: URL? {
+        URL(string: backendURLString)
+    }
+
+    var isMockEnvironment: Bool {
+        environmentName == APIEnvironment.mock.rawValue || backendURL?.scheme?.lowercased() == "mock"
+    }
+
+    var isDeveloperMode: Bool {
+        environmentName != APIEnvironment.production.rawValue || isMockEnvironment
+    }
+
+    var environmentName: String {
+        (Bundle.main.object(forInfoDictionaryKey: "WSEnvironmentName") as? String) ?? "development"
+    }
+
+    var subscriptionProductIDs: [String] {
+        let rawValue = (Bundle.main.object(forInfoDictionaryKey: "WSSubscriptionProductIDs") as? String) ?? ""
+        return rawValue
+            .split(separator: ",")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    private var api: BackendAPI? {
+        guard let backendURL else {
+            return nil
+        }
+        let session = self
+        let client = HTTPClient(
+            configuration: makeAPIConfiguration(for: backendURL),
+            accessTokenProvider: {
+                await session.currentAccessTokenForHTTPClient()
+            },
+            accessTokenRefresher: {
+                try await session.refreshAccessTokenForHTTPClient()
+            }
+        )
+        return BackendAPI(httpClient: client)
+    }
+
+    func bootstrap() async {
+        defer { isBootstrapping = false }
+        if isMockEnvironment {
+            loadMockSessionData()
+            authState = .signedIn
+            return
+        }
+        if refreshToken.isEmpty, !isAuthenticated {
+            authState = .signedOut
+            return
+        }
+        authState = .restoring
+        await refreshAccessTokenIfNeeded()
+        guard isAuthenticated else {
+            authState = .signedOut
+            return
+        }
+        await refreshSessionData()
+        await loadLocalAssets()
+    }
+
+    func signIn(backendURLString: String, accessToken: String, refreshToken: String) async {
+        let trimmedURL = backendURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAccessToken = accessToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedRefreshToken = refreshToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.backendURLString = trimmedURL
+        if trimmedURL.lowercased().hasPrefix("mock://") {
+            sessionTokens = SessionTokens(
+                accessToken: "mock-access-token",
+                refreshToken: "mock-refresh-token"
+            )
+            authState = .signedIn
+            persistCredentials()
+            loadMockSessionData()
+            return
+        }
+        guard let normalizedURL = normalizedBackendURLString(from: trimmedURL) else {
+            authState = .failed
+            authFailureReason = .invalidBackendURL
+            errorText = authFailureReason?.guidance
+            return
+        }
+        self.backendURLString = normalizedURL
+        self.sessionTokens = SessionTokens(
+            accessToken: trimmedAccessToken,
+            refreshToken: trimmedRefreshToken.isEmpty ? nil : trimmedRefreshToken
+        )
+        authState = .signedIn
+        authFailureReason = nil
+        persistCredentials()
+        await refreshSessionData()
+    }
+
+    func signInWithApplePlaceholder(identityToken: String?, authorizationCode: String?) async {
+        guard let identityToken, !identityToken.isEmpty else {
+            errorText = "Sign in with Apple completed, but no identity token was returned to exchange with your backend."
+            authState = .failed
+            authFailureReason = .unauthorized
+            return
+        }
+        if isMockEnvironment {
+            sessionTokens = SessionTokens(
+                accessToken: "mock-apple-access-token",
+                refreshToken: "mock-apple-refresh-token"
+            )
+            persistCredentials()
+            loadMockSessionData()
+            authState = .signedIn
+            return
+        }
+        guard let api else {
+            errorText = "Enter a valid backend URL before using Sign in with Apple."
+            authState = .failed
+            authFailureReason = .invalidBackendURL
+            return
+        }
+        isBusy = true
+        errorText = nil
+        defer { isBusy = false }
+        do {
+            let tokens = try await api.auth.signInWithApple(
+                identityToken: identityToken,
+                authorizationCode: authorizationCode
+            )
+            backendURLString = backendURLString.trimmingCharacters(in: .whitespacesAndNewlines)
+            sessionTokens = tokens
+            user = tokens.user
+            entitlement = tokens.entitlements
+            if let summary = tokens.entitlements {
+                entitlementState = EntitlementState(
+                    summary: summary,
+                    lastRefreshedAt: Date(),
+                    source: .backend
+                )
+            }
+            authState = .signedIn
+            authFailureReason = nil
+            persistCredentials()
+            await refreshSessionData()
+        } catch {
+            errorText = displayMessage(for: error)
+            authState = .failed
+            authFailureReason = failureReason(for: error)
+        }
+    }
+
+    func signOut() {
+        let currentAPI = api
+        let currentRefreshToken = refreshToken
+        sessionTokens = nil
+        user = nil
+        entitlement = nil
+        entitlementState = EntitlementState()
+        catalog = []
+        jobs = []
+        presentPaywall = false
+        errorText = nil
+        authFailureReason = nil
+        authState = .signedOut
+        persistCredentials()
+        if !isMockEnvironment {
+            Task {
+                _ = try? await currentAPI?.auth.signOut(refreshToken: currentRefreshToken)
+            }
+        }
+    }
+
+    func refreshAccessTokenIfNeeded() async {
+        guard !refreshToken.isEmpty else { return }
+        let needsRefresh = accessToken.isEmpty || (sessionTokens?.isExpired() ?? false)
+        guard needsRefresh else { return }
+        do {
+            _ = try await refreshAccessTokenForHTTPClient()
+            authFailureReason = nil
+        } catch {
+            errorText = displayMessage(for: error)
+            authState = .failed
+            authFailureReason = failureReason(for: error)
+        }
+    }
+
+    func refreshSessionData() async {
+        if isMockEnvironment {
+            loadMockSessionData()
+            authState = .signedIn
+            return
+        }
+        guard let api else {
+            errorText = "Enter a valid backend URL."
+            authState = .failed
+            authFailureReason = .invalidBackendURL
+            return
+        }
+        isBusy = true
+        authState = .refreshing
+        errorText = nil
+        authFailureReason = nil
+        defer { isBusy = false }
+        do {
+            async let profile = api.auth.currentUser()
+            async let entitlement = api.auth.currentEntitlement()
+            async let config = api.catalog.appConfig()
+            async let models = api.catalog.listModels()
+            async let jobsPage = api.jobs.listJobs()
+
+            self.user = try await profile
+            self.entitlement = try await entitlement
+            self.entitlementState = EntitlementState(
+                summary: self.entitlement,
+                lastRefreshedAt: Date(),
+                source: .backend
+            )
+            self.appConfig = try await config
+            self.catalog = try await models
+            self.jobs = try await jobsPage.items
+            self.authState = .signedIn
+        } catch {
+            errorText = displayMessage(for: error)
+            authState = .failed
+            authFailureReason = failureReason(for: error)
+        }
+    }
+
+    func refreshEntitlement() async {
+        if isMockEnvironment {
+            entitlement = makeMockEntitlement()
+            entitlementState = EntitlementState(
+                summary: entitlement,
+                lastRefreshedAt: Date(),
+                source: .backend
+            )
+            return
+        }
+        guard let api else { return }
+        do {
+            let summary = try await api.auth.currentEntitlement()
+            entitlement = summary
+            entitlementState = EntitlementState(
+                summary: summary,
+                lastRefreshedAt: Date(),
+                source: .backend
+            )
+        } catch {
+            errorText = displayMessage(for: error)
+            entitlementState.source = .stale
+        }
+    }
+
+    func refreshJobs() async {
+        if isMockEnvironment {
+            jobs = makeMockJobs()
+            return
+        }
+        guard let api else { return }
+        do {
+            jobs = try await api.jobs.listJobs().items
+        } catch {
+            errorText = displayMessage(for: error)
+        }
+    }
+
+    func submitJob(
+        model: CatalogModel,
+        prompt: String,
+        negativePrompt: String,
+        selectedImageData: Data?
+    ) async throws -> Job {
+        if isMockEnvironment {
+            let mockJob = Job(
+                id: UUID().uuidString,
+                modelId: model.id,
+                modelName: model.name,
+                prompt: prompt,
+                status: .completed,
+                createdAt: ISO8601DateFormatter().string(from: Date()),
+                updatedAt: ISO8601DateFormatter().string(from: Date()),
+                outputs: []
+            )
+            upsert(mockJob)
+            return mockJob
+        }
+        guard let api else {
+            throw APIError(message: "Enter a valid backend URL.")
+        }
+        guard entitlementState.isActive || entitlement?.isActive == true else {
+            presentPaywall = true
+            throw APIError(message: "An active subscription is required to create a job.")
+        }
+        let uploadReceipt: UploadReceipt?
+        if let selectedImageData {
+            uploadReceipt = try await api.uploads.uploadImageData(selectedImageData)
+        } else {
+            uploadReceipt = nil
+        }
+        let request = CreateJobRequest(
+            modelId: model.id,
+            prompt: prompt,
+            negativePrompt: negativePrompt.isEmpty ? nil : negativePrompt,
+            imageURL: uploadReceipt?.fileURL
+        )
+        let job = try await api.jobs.createJob(request)
+        upsert(job)
+        Task { await pollJobIfNeeded(jobID: job.id) }
+        return job
+    }
+
+    private func refreshAccessTokenForHTTPClient() async throws -> String? {
+        if let task = tokenRefreshTask {
+            let refreshed = try await task.value
+            return refreshed.accessToken
+        }
+        guard !refreshToken.isEmpty, let backendURL else {
+            return nil
+        }
+        let refreshToken = refreshToken
+        let config = makeAPIConfiguration(for: backendURL)
+        let task = Task<SessionTokens, Error> {
+            let client = HTTPClient(configuration: config, accessTokenProvider: { nil })
+            let api = BackendAPI(httpClient: client)
+            return try await api.auth.refreshSession(refreshToken: refreshToken)
+        }
+        tokenRefreshTask = task
+        defer { tokenRefreshTask = nil }
+        let refreshed = try await task.value
+        sessionTokens = refreshed
+        user = refreshed.user ?? user
+        if let refreshedEntitlements = refreshed.entitlements {
+            entitlement = refreshedEntitlements
+            entitlementState = EntitlementState(
+                summary: refreshedEntitlements,
+                lastRefreshedAt: Date(),
+                source: .backend
+            )
+        }
+        persistCredentials()
+        return refreshed.accessToken
+    }
+
+    private func currentAccessTokenForHTTPClient() -> String? {
+        accessToken
+    }
+
+    private func makeAPIConfiguration(for backendURL: URL) -> APIConfiguration {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let bundleId = Bundle.main.bundleIdentifier ?? "ios-client"
+        return APIConfiguration(
+            baseURL: backendURL,
+            clientName: bundleId,
+            clientVersion: version,
+            clientOS: "ios",
+            environment: APIEnvironment(rawValue: environmentName) ?? .development,
+            apiVersion: "v1",
+            requiresHTTPS: !environmentName.contains("dev") && !isMockEnvironment
+        )
+    }
+
+    private func loadMockSessionData() {
+        user = UserProfile(id: "mock-user", displayName: "WaveSpeed Tester", email: "ios@example.com")
+        entitlement = makeMockEntitlement()
+        entitlementState = EntitlementState(
+            summary: entitlement,
+            lastRefreshedAt: Date(),
+            source: .backend
+        )
+        appConfig = AppConfig(
+            supportEmail: "support@example.com",
+            privacyURL: URL(string: "https://example.com/privacy"),
+            termsURL: URL(string: "https://example.com/terms"),
+            subscriptionManagementURL: URL(string: "https://apps.apple.com/account/subscriptions"),
+            featuredModelIds: ["flux-pro", "seedream-4", "wan-2.2"]
+        )
+        catalog = [
+            CatalogModel(
+                id: "flux-pro",
+                name: "Flux Pro",
+                summary: "High-quality text-to-image generation.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "seedream-4",
+                name: "SeeDream 4",
+                summary: "Fast image generation for previews and ideation.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "wan-2.2",
+                name: "Wan 2.2",
+                summary: "Text-to-video generation.",
+                kind: "video"
+            )
+        ]
+        jobs = makeMockJobs()
+    }
+
+    private func makeMockEntitlement() -> EntitlementSummary {
+        EntitlementSummary(
+            isActive: true,
+            tierName: "Pro Monthly",
+            renewalDate: ISO8601DateFormatter().string(from: Date().addingTimeInterval(86400 * 27)),
+            usageDescription: "Mock entitlement enabled for iOS development.",
+            managementURL: URL(string: "https://apps.apple.com/account/subscriptions")
+        )
+    }
+
+    private func makeMockJobs() -> [Job] {
+        [
+            Job(
+                id: "job-mock-001",
+                modelId: "flux-pro",
+                modelName: "Flux Pro",
+                prompt: "Editorial portrait with cinematic lighting",
+                status: .completed,
+                createdAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-1800)),
+                updatedAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-1700)),
+                outputs: []
+            ),
+            Job(
+                id: "job-mock-002",
+                modelId: "wan-2.2",
+                modelName: "Wan 2.2",
+                prompt: "Slow panning shot over neon city skyline",
+                status: .running,
+                createdAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-300)),
+                updatedAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-10)),
+                outputs: []
+            )
+        ]
+    }
+
+    func pollJobIfNeeded(jobID: String) async {
+        guard let api else { return }
+        do {
+            while true {
+                let job = try await api.jobs.getJob(id: jobID)
+                upsert(job)
+                if job.status.isTerminal {
+                    break
+                }
+                try await Task.sleep(for: .seconds(2))
+            }
+        } catch {
+            errorText = displayMessage(for: error)
+        }
+    }
+
+    func cancel(job: Job) async {
+        guard let api else { return }
+        do {
+            let updated = try await api.jobs.cancelJob(id: job.id)
+            upsert(updated)
+        } catch {
+            errorText = displayMessage(for: error)
+        }
+    }
+
+    func saveOutput(_ output: JobOutput, for job: Job) async {
+        do {
+            let (data, _) = try await URLSession.shared.data(from: output.url)
+            let savedAsset = try documentsStore.save(
+                data: data,
+                suggestedFilename: "\(job.modelId)-\(job.id)-\(output.id)",
+                mimeType: output.mimeType
+            )
+            localAssets.insert(savedAsset, at: 0)
+        } catch {
+            errorText = displayMessage(for: error)
+        }
+    }
+
+    func loadLocalAssets() async {
+        localAssets = documentsStore.loadAssets()
+    }
+
+    private func upsert(_ job: Job) {
+        if let index = jobs.firstIndex(where: { $0.id == job.id }) {
+            jobs[index] = job
+        } else {
+            jobs.insert(job, at: 0)
+        }
+    }
+
+    private func persistCredentials() {
+        UserDefaults.standard.set(backendURLString, forKey: "backend_url")
+        if accessToken.isEmpty {
+            KeychainStore.clearTokens()
+        } else {
+            if let sessionTokens {
+                KeychainStore.saveSessionTokens(sessionTokens)
+            } else {
+                KeychainStore.saveTokens(accessToken: accessToken, refreshToken: refreshToken)
+            }
+        }
+    }
+
+    private func normalizedBackendURLString(from value: String) -> String? {
+        guard !value.isEmpty else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard var components = URLComponents(string: trimmed) else {
+            return nil
+        }
+        if components.scheme == nil {
+            components.scheme = "https"
+        }
+        guard let url = components.url else {
+            return nil
+        }
+        if !isDeveloperMode && url.scheme?.lowercased() != "https" {
+            return nil
+        }
+        return url.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+    }
+
+    private func failureReason(for error: Error) -> AuthFailureReason {
+        if let apiError = error as? APIError {
+            switch apiError.category {
+            case .unauthorized:
+                return refreshToken.isEmpty ? .unauthorized : .refreshExpired
+            case .serverError:
+                return .backendUnavailable
+            case .networkUnavailable:
+                return .networkUnavailable
+            default:
+                return .unknown
+            }
+        }
+        return .unknown
+    }
+
+    private func displayMessage(for error: Error) -> String {
+        if let localized = error as? LocalizedError, let message = localized.errorDescription {
+            return message
+        }
+        return String(describing: error)
+    }
+}

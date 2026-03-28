@@ -1,0 +1,12 @@
+{
+  "name": "wavespeed-ios-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared local and Vercel backend for the standalone iOS app",
+  "type": "module",
+  "main": "src/server.ts",
+  "scripts": {
+    "build": "node --experimental-transform-types --check src/server.ts && node --experimental-transform-types --check ../api/health.ts && node --experimental-transform-types --check \"../api/v1/[...route].ts\"",
+    "start": "node --experimental-transform-types src/server.ts"
+  }
+}
