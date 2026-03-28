@@ -140,7 +140,19 @@ async function parseJsonBody<T>(request: Request): Promise<T> {
   if (!text.trim()) {
     return {} as T;
   }
-  return JSON.parse(text) as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch (error) {
+    console.log(
+      JSON.stringify({
+        parser: "json",
+        pathname: new URL(request.url).pathname,
+        textLength: text.length,
+        textPreview: text.slice(0, 160),
+      }),
+    );
+    throw error;
+  }
 }
 
 async function readBodyBuffer(request: Request): Promise<Buffer> {

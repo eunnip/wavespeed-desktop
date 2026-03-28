@@ -67,6 +67,23 @@ function readNodeBody(request: IncomingMessage): Promise<Uint8Array> {
     if (isBinaryBody(knownBody)) {
       return Promise.resolve(Buffer.from(knownBody));
     }
+    if (
+      knownBody &&
+      typeof knownBody === "object" &&
+      (knownBody as { constructor?: { name?: string } }).constructor?.name === "Object"
+    ) {
+      const serialized = JSON.stringify(knownBody);
+      if (requestPath.includes("/v1/auth/sign-in/apple")) {
+        console.log(
+          JSON.stringify({
+            adapter: "plainObjectBody",
+            keys: Object.keys(knownBody as Record<string, unknown>),
+            serializedPreview: serialized.slice(0, 120),
+          }),
+        );
+      }
+      return Promise.resolve(Buffer.from(serialized));
+    }
     if (requestPath.includes("/v1/auth/sign-in/apple")) {
       console.log(
         JSON.stringify({
