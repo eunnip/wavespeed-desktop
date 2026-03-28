@@ -23,7 +23,11 @@ struct ManageSubscriptionView: View {
                     Task { await session.refreshEntitlement() }
                 }
                 Button("Restore purchases") {
-                    Task { await viewModel.restorePurchases() }
+                    Task {
+                        await viewModel.restorePurchasesAndSync { transactions in
+                            try await session.restorePurchasedSubscriptions(transactions)
+                        }
+                    }
                 }
                 .disabled(viewModel.isRestoring)
                 if let managementURL = session.entitlementState.summary?.managementURL ?? session.appConfig.subscriptionManagementURL {
@@ -32,7 +36,7 @@ struct ManageSubscriptionView: View {
             } header: {
                 Text("Actions")
             } footer: {
-                Text("Wire StoreKit transaction submission to your backend once `/v1/iap/transactions/sync` is live.")
+                Text("Restore submits verified StoreKit transactions to the backend and refreshes entitlements.")
             }
         }
         .navigationTitle("Subscription")

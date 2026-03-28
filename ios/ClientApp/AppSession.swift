@@ -45,6 +45,7 @@ final class AppSession: ObservableObject {
     @Published var presentPaywall = false
     @Published var errorText: String?
     @Published var authFailureReason: AuthFailureReason?
+    @Published var pendingAppleNonce: String?
 
     private let documentsStore = LocalAssetStore()
     private var tokenRefreshTask: Task<SessionTokens, Error>?
@@ -169,7 +170,11 @@ final class AppSession: ObservableObject {
         await refreshSessionData()
     }
 
-    func signInWithApplePlaceholder(identityToken: String?, authorizationCode: String?) async {
+    func signInWithApplePlaceholder(
+        identityToken: String?,
+        authorizationCode: String?,
+        nonce: String?
+    ) async {
         guard let identityToken, !identityToken.isEmpty else {
             errorText = "Sign in with Apple completed, but no identity token was returned to exchange with your backend."
             authState = .failed
@@ -198,7 +203,8 @@ final class AppSession: ObservableObject {
         do {
             let tokens = try await api.auth.signInWithApple(
                 identityToken: identityToken,
-                authorizationCode: authorizationCode
+                authorizationCode: authorizationCode,
+                nonce: nonce
             )
             backendURLString = backendURLString.trimmingCharacters(in: .whitespacesAndNewlines)
             sessionTokens = tokens
@@ -219,6 +225,70 @@ final class AppSession: ObservableObject {
             errorText = displayMessage(for: error)
             authState = .failed
             authFailureReason = failureReason(for: error)
+        }
+        pendingAppleNonce = nil
+    }
+
+    func syncPurchasedSubscription(_ transaction: VerifiedStoreTransaction) async throws {
+        if isMockEnvironment {
+            entitlement = makeMockEntitlement()
+            entitlementState = EntitlementState(
+                summary: entitlement,
+                lastRefreshedAt: Date(),
+                source: .backend
+            )
+            return
+        }
+        guard let api else {
+            throw APIError(message: "Enter a valid backend URL.")
+        }
+        let result = try await api.auth.syncAppleSubscription(
+            AppleSubscriptionSyncRequest(
+                productID: transaction.productID,
+                transactionID: transaction.transactionID,
+                originalTransactionID: transaction.originalTransactionID,
+                appAccountToken: transaction.appAccountToken,
+                signedTransactionInfo: transaction.signedTransactionInfo
+            )
+        )
+        if let summary = result.entitlement {
+            entitlement = summary
+            entitlementState = EntitlementState(
+                summary: summary,
+                lastRefreshedAt: Date(),
+                source: .backend
+            )
+        } else {
+            await refreshEntitlement()
+        }
+    }
+
+    func restorePurchasedSubscriptions(_ transactions: [VerifiedStoreTransaction]) async throws {
+        if isMockEnvironment {
+            entitlement = makeMockEntitlement()
+            entitlementState = EntitlementState(
+                summary: entitlement,
+                lastRefreshedAt: Date(),
+                source: .backend
+            )
+            return
+        }
+        guard let api else {
+            throw APIError(message: "Enter a valid backend URL.")
+        }
+        let originalTransactionIDs = transactions.compactMap(\.originalTransactionID)
+        let result = try await api.auth.restoreAppleSubscriptions(
+            originalTransactionIDs: Array(Set(originalTransactionIDs))
+        )
+        if let summary = result.entitlement {
+            entitlement = summary
+            entitlementState = EntitlementState(
+                summary: summary,
+                lastRefreshedAt: Date(),
+                source: .backend
+            )
+        } else {
+            await refreshEntitlement()
         }
     }
 

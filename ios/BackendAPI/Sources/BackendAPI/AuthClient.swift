@@ -21,11 +21,16 @@ public struct AuthClient: Sendable {
 
     public func signInWithApple(
         identityToken: String,
-        authorizationCode: String?
+        authorizationCode: String?,
+        nonce: String?
     ) async throws -> SessionTokens {
         return try await httpClient.post(
             "/v1/auth/sign-in/apple",
-            body: AppleSignInRequest(identityToken: identityToken, authorizationCode: authorizationCode)
+            body: AppleSignInRequest(
+                identityToken: identityToken,
+                authorizationCode: authorizationCode,
+                nonce: nonce
+            )
         )
     }
 

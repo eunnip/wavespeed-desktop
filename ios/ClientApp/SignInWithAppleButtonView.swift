@@ -1,4 +1,5 @@
 import AuthenticationServices
+import CryptoKit
 import SwiftUI
 
 struct SignInWithAppleButtonView: View {
@@ -6,7 +7,10 @@ struct SignInWithAppleButtonView: View {
 
     var body: some View {
         SignInWithAppleButton(.signIn) { request in
+            let rawNonce = randomNonce()
             request.requestedScopes = [.fullName, .email]
+            request.nonce = sha256(rawNonce)
+            session.pendingAppleNonce = rawNonce
         } onCompletion: { result in
             switch result {
             case .success(let authorization):
@@ -23,7 +27,8 @@ struct SignInWithAppleButtonView: View {
                 Task {
                     await session.signInWithApplePlaceholder(
                         identityToken: identityToken,
-                        authorizationCode: authorizationCode
+                        authorizationCode: authorizationCode,
+                        nonce: session.pendingAppleNonce
                     )
                 }
             case .failure(let error):
@@ -32,5 +37,17 @@ struct SignInWithAppleButtonView: View {
         }
         .signInWithAppleButtonStyle(.black)
         .frame(height: 50)
+    }
+
+    private func sha256(_ value: String) -> String {
+        let digest = SHA256.hash(data: Data(value.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func randomNonce(length: Int = 32) -> String {
+        let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        return String((0..<length).compactMap { _ in
+            charset.randomElement()
+        })
     }
 }

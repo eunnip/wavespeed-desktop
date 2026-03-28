@@ -30,7 +30,11 @@ struct PaywallView: View {
                                     Text(product.displayPrice)
                                         .foregroundStyle(.secondary)
                                     Button("Purchase") {
-                                        Task { await viewModel.purchase(product) }
+                                        Task {
+                                            await viewModel.purchaseAndSync(product) { transaction in
+                                                try await session.syncPurchasedSubscription(transaction)
+                                            }
+                                        }
                                     }
                                     .disabled(viewModel.isPurchasing)
                                 }
@@ -41,7 +45,7 @@ struct PaywallView: View {
                 }
 
                 Section("Developer fallback") {
-                    Text("Until your production purchase sync is complete, use the developer connection from the welcome screen for backend token-based testing.")
+                    Text("If backend entitlement sync is unavailable, use the developer connection from the welcome screen for token-based testing.")
                         .foregroundStyle(.secondary)
                 }
             }

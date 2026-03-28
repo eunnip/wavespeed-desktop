@@ -1,6 +1,11 @@
 import crypto from "node:crypto";
 import path from "node:path";
 
+import { verifyAppleIdentityToken, type AppleIdentity } from "./apple/verify-identity-token.ts";
+import {
+  verifyAppStoreTransaction,
+  type VerifiedAppStoreTransaction,
+} from "./app-store/transaction-verifier.ts";
 import { defaultCatalogModels } from "./fixtures.ts";
 import { parseMultipartFile } from "./multipart.ts";
 import { type ObjectStorage } from "./object-storage.ts";
@@ -25,6 +30,13 @@ type BackendConfig = {
   privacyURL: string;
   termsURL: string;
   managementURL: string;
+  appleSignInClientId: string;
+  appleSignInExpectedIssuer: string;
+  appleSignInRequireNonce: boolean;
+  appleSignInEnforceVerification: boolean;
+  appStoreBundleId: string;
+  appStoreEnvironment: string;
+  appStoreRequireSignedTransactions: boolean;
 };
 
 type Dependencies = {
@@ -198,6 +210,26 @@ function createPromptSvg(prompt: string, modelName: string): string {
 export function createBackendApp(dependencies: Dependencies): BackendApp {
   const { config, store, objectStorage } = dependencies;
 
+  function shouldVerifyAppleIdentity(): boolean {
+    return config.appleSignInEnforceVerification || Boolean(config.appleSignInClientId);
+  }
+
+  async function resolveAppleIdentity(
+    identityToken: string,
+    nonce?: string,
+  ): Promise<AppleIdentity | undefined> {
+    if (!shouldVerifyAppleIdentity()) {
+      return undefined;
+    }
+    return verifyAppleIdentityToken({
+      identityToken,
+      expectedIssuer: config.appleSignInExpectedIssuer,
+      expectedAudience: config.appleSignInClientId || undefined,
+      rawNonce: nonce,
+      requireNonce: config.appleSignInRequireNonce,
+    });
+  }
+
   async function activePurchaseForUser(userId: string): Promise<PurchaseRecord | undefined> {
     const now = Date.now();
     const purchases = await store.listPurchasesForUser(userId);
@@ -269,12 +301,18 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
     };
   }
 
-  async function ensureUserFromApple(identityToken: string): Promise<UserRecord> {
-    const appleSubject = sha256(identityToken);
+  async function ensureUserFromApple(
+    identityToken: string,
+    identity?: AppleIdentity,
+  ): Promise<UserRecord> {
+    const appleSubject = identity?.subject ?? sha256(identityToken);
     const existing = await store.findUserByAppleSubject(appleSubject);
     if (existing) {
       const updated: UserRecord = {
         ...existing,
+        email: identity?.email ?? existing.email,
+        emailVerified: identity?.emailVerified ?? existing.emailVerified,
+        isPrivateEmail: identity?.isPrivateEmail ?? existing.isPrivateEmail,
         updatedAt: nowIso(),
       };
       await store.saveUser(updated);
@@ -285,7 +323,10 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
     const user: UserRecord = {
       id: createId("usr"),
       appleSubject,
-      displayName: "iOS User",
+      email: identity?.email,
+      emailVerified: identity?.emailVerified,
+      isPrivateEmail: identity?.isPrivateEmail,
+      displayName: identity?.email ?? "iOS User",
       createdAt,
       updatedAt: createdAt,
     };
@@ -403,12 +444,17 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
     }
 
     if (context.method === "POST" && context.url.pathname === "/v1/auth/sign-in/apple") {
-      const body = await parseJsonBody<{ identity_token?: string }>(request);
+      const body = await parseJsonBody<{
+        identity_token?: string;
+        authorization_code?: string;
+        nonce?: string;
+      }>(request);
       if (!body.identity_token) {
         throw { status: 422, message: "identity_token is required" } satisfies AppError;
       }
 
-      const user = await ensureUserFromApple(body.identity_token);
+      const appleIdentity = await resolveAppleIdentity(body.identity_token, body.nonce);
+      const user = await ensureUserFromApple(body.identity_token, appleIdentity);
       const refresh = createRefreshSession(user.id);
       const access = createAccessSession(user.id, refresh.token);
 
@@ -517,6 +563,25 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
         } satisfies AppError;
       }
 
+      let verifiedTransaction: VerifiedAppStoreTransaction | undefined;
+      try {
+        verifiedTransaction = verifyAppStoreTransaction({
+          signedTransactionInfo: body.signed_transaction_info,
+          transactionId: body.transaction_id,
+          originalTransactionId: body.original_transaction_id,
+          productId: body.product_id,
+          appAccountToken: body.app_account_token,
+          expectedBundleId: config.appStoreBundleId || undefined,
+          expectedEnvironment: config.appStoreEnvironment || undefined,
+          requireSignedTransaction: config.appStoreRequireSignedTransactions,
+        });
+      } catch (error) {
+        throw {
+          status: 422,
+          message: error instanceof Error ? error.message : "StoreKit transaction is invalid",
+        } satisfies AppError;
+      }
+
       const existing = await store.findPurchaseByTransactionId(body.transaction_id);
       if (!existing) {
         await store.insertPurchase({
@@ -526,11 +591,21 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
           transactionId: body.transaction_id,
           originalTransactionId: body.original_transaction_id,
           appAccountToken: body.app_account_token,
-          signedTransactionInfo: body.signed_transaction_info,
-          expiresAt: addDays(new Date(), config.defaultSubscriptionDays),
+          signedTransactionInfo:
+            verifiedTransaction?.signedTransactionInfo ?? body.signed_transaction_info,
+          expiresAt:
+            verifiedTransaction?.expiresAt ?? addDays(new Date(), config.defaultSubscriptionDays),
           source: "sync",
-          environment: config.mode === "production" ? "production" : "sandbox",
+          environment:
+            verifiedTransaction?.environment ??
+            (config.mode === "production" ? "production" : "sandbox"),
           createdAt: nowIso(),
+          purchaseDate: verifiedTransaction?.purchaseDate,
+          originalPurchaseDate: verifiedTransaction?.originalPurchaseDate,
+          webOrderLineItemId: verifiedTransaction?.webOrderLineItemId,
+          ownershipType: verifiedTransaction?.ownershipType,
+          revocationReason: verifiedTransaction?.revocationReason,
+          revokedAt: verifiedTransaction?.revokedAt,
         });
       }
 
@@ -538,9 +613,11 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
         data: {
           accepted: true,
           message:
-            config.mode === "production"
-              ? "Transaction accepted. Replace this with App Store verification before production launch."
-              : "Transaction accepted in local development mode.",
+            verifiedTransaction
+              ? "Transaction accepted and validated against signed StoreKit payload fields."
+              : config.mode === "production"
+                ? "Transaction accepted. Configure signed transaction enforcement before production launch."
+                : "Transaction accepted in local development mode.",
           entitlement: await entitlementSummary(user.id),
         },
       });

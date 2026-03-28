@@ -59,10 +59,12 @@ public struct SessionTokens: Codable, Sendable {
 public struct AppleSignInRequest: Codable, Sendable {
     public let identityToken: String
     public let authorizationCode: String?
+    public let nonce: String?
 
-    public init(identityToken: String, authorizationCode: String? = nil) {
+    public init(identityToken: String, authorizationCode: String? = nil, nonce: String? = nil) {
         self.identityToken = identityToken
         self.authorizationCode = authorizationCode
+        self.nonce = nonce
     }
 }
 

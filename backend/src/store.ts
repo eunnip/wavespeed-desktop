@@ -5,6 +5,8 @@ export type UserRecord = {
   id: string;
   appleSubject: string;
   email?: string;
+  emailVerified?: boolean;
+  isPrivateEmail?: boolean;
   displayName?: string;
   deletedAt?: string;
   createdAt: string;
@@ -42,6 +44,11 @@ export type PurchaseRecord = {
   source: "sync" | "restore";
   environment?: string;
   createdAt: string;
+  purchaseDate?: string;
+  originalPurchaseDate?: string;
+  webOrderLineItemId?: string;
+  ownershipType?: string;
+  revocationReason?: string;
   revokedAt?: string;
 };
 

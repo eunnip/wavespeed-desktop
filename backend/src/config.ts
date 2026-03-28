@@ -34,6 +34,14 @@ function readStringArray(name: string, fallback: string[]): string[] {
     .filter(Boolean);
 }
 
+function readBoolean(name: string, fallback: boolean): boolean {
+  const value = process.env[name];
+  if (!value) {
+    return fallback;
+  }
+  return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+}
+
 const isVercel = Boolean(process.env.VERCEL);
 const supabaseURL = process.env.SUPABASE_URL ?? process.env.IOS_BACKEND_SUPABASE_URL ?? "";
 const supabaseServiceRoleKey =
@@ -68,7 +76,9 @@ export const config = {
   port: readInt("IOS_BACKEND_PORT", 8787),
   host: process.env.IOS_BACKEND_HOST ?? "127.0.0.1",
   baseURL: process.env.IOS_BACKEND_BASE_URL ?? "",
-  dataDir: process.env.IOS_BACKEND_DATA_DIR ?? path.resolve(backendDir, "data"),
+  dataDir:
+    process.env.IOS_BACKEND_DATA_DIR ??
+    (isVercel ? "/tmp/wavespeed-ios-backend" : path.resolve(backendDir, "data")),
   accessTokenTTLSeconds: readInt("IOS_BACKEND_ACCESS_TTL_SECONDS", 60 * 30),
   refreshTokenTTLDays: readInt("IOS_BACKEND_REFRESH_TTL_DAYS", 60),
   defaultSubscriptionDays: readInt("IOS_BACKEND_SUBSCRIPTION_DAYS", 30),
@@ -97,6 +107,20 @@ export const config = {
   r2SecretAccessKey,
   r2Endpoint: process.env.IOS_BACKEND_R2_ENDPOINT ?? "",
   r2PublicBaseURL: process.env.R2_PUBLIC_BASE_URL ?? "",
+  appleSignInClientId: process.env.IOS_BACKEND_APPLE_SIGN_IN_CLIENT_ID ?? "",
+  appleSignInExpectedIssuer:
+    process.env.IOS_BACKEND_APPLE_SIGN_IN_EXPECTED_ISSUER ?? "https://appleid.apple.com",
+  appleSignInRequireNonce: readBoolean("IOS_BACKEND_APPLE_SIGN_IN_REQUIRE_NONCE", false),
+  appleSignInEnforceVerification: readBoolean(
+    "IOS_BACKEND_APPLE_SIGN_IN_ENFORCE_VERIFICATION",
+    false,
+  ),
+  appStoreBundleId: process.env.IOS_BACKEND_APP_STORE_BUNDLE_ID ?? "",
+  appStoreEnvironment: process.env.IOS_BACKEND_APP_STORE_ENVIRONMENT ?? "",
+  appStoreRequireSignedTransactions: readBoolean(
+    "IOS_BACKEND_APP_STORE_REQUIRE_SIGNED_TRANSACTIONS",
+    false,
+  ),
 };
 
 export function requireConfig(value: string, message: string): string {

@@ -38,7 +38,36 @@ final class SubscriptionViewModel: ObservableObject {
         errorText = nil
         defer { isRestoring = false }
         do {
-            try await service.restorePurchases()
+            _ = try await service.restorePurchases()
+        } catch {
+            errorText = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+        }
+    }
+
+    func purchaseAndSync(
+        _ product: Product,
+        sync: @escaping @Sendable (VerifiedStoreTransaction) async throws -> Void
+    ) async {
+        isPurchasing = true
+        errorText = nil
+        defer { isPurchasing = false }
+        do {
+            let transaction = try await service.purchase(product)
+            try await sync(transaction)
+        } catch {
+            errorText = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+        }
+    }
+
+    func restorePurchasesAndSync(
+        sync: @escaping @Sendable ([VerifiedStoreTransaction]) async throws -> Void
+    ) async {
+        isRestoring = true
+        errorText = nil
+        defer { isRestoring = false }
+        do {
+            let transactions = try await service.restorePurchases()
+            try await sync(transactions)
         } catch {
             errorText = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
         }
