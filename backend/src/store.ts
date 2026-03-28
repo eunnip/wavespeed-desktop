@@ -578,6 +578,8 @@ type SupabaseUserRow = {
   id: string;
   apple_subject: string;
   email?: string | null;
+  email_verified?: boolean | null;
+  is_private_email?: boolean | null;
   display_name?: string | null;
   deleted_at?: string | null;
   created_at: string;
@@ -615,6 +617,11 @@ type SupabasePurchaseRow = {
   source: "sync" | "restore";
   environment?: string | null;
   created_at: string;
+  purchase_date?: string | null;
+  original_purchase_date?: string | null;
+  web_order_line_item_id?: string | null;
+  ownership_type?: string | null;
+  revocation_reason?: string | null;
   revoked_at?: string | null;
 };
 
@@ -653,6 +660,8 @@ function mapUserRow(row: SupabaseUserRow): UserRecord {
     id: row.id,
     appleSubject: row.apple_subject,
     email: row.email ?? undefined,
+    emailVerified: row.email_verified ?? undefined,
+    isPrivateEmail: row.is_private_email ?? undefined,
     displayName: row.display_name ?? undefined,
     deletedAt: row.deleted_at ?? undefined,
     createdAt: row.created_at,
@@ -665,6 +674,8 @@ function userToRow(user: UserRecord): SupabaseUserRow {
     id: user.id,
     apple_subject: user.appleSubject,
     email: user.email ?? null,
+    email_verified: user.emailVerified ?? null,
+    is_private_email: user.isPrivateEmail ?? null,
     display_name: user.displayName ?? null,
     deleted_at: user.deletedAt ?? null,
     created_at: user.createdAt,
@@ -731,6 +742,11 @@ function mapPurchaseRow(row: SupabasePurchaseRow): PurchaseRecord {
     source: row.source,
     environment: row.environment ?? undefined,
     createdAt: row.created_at,
+    purchaseDate: row.purchase_date ?? undefined,
+    originalPurchaseDate: row.original_purchase_date ?? undefined,
+    webOrderLineItemId: row.web_order_line_item_id ?? undefined,
+    ownershipType: row.ownership_type ?? undefined,
+    revocationReason: row.revocation_reason ?? undefined,
     revokedAt: row.revoked_at ?? undefined,
   };
 }
@@ -748,6 +764,11 @@ function purchaseToRow(purchase: PurchaseRecord): SupabasePurchaseRow {
     source: purchase.source,
     environment: purchase.environment ?? "sandbox",
     created_at: purchase.createdAt,
+    purchase_date: purchase.purchaseDate ?? null,
+    original_purchase_date: purchase.originalPurchaseDate ?? null,
+    web_order_line_item_id: purchase.webOrderLineItemId ?? null,
+    ownership_type: purchase.ownershipType ?? null,
+    revocation_reason: purchase.revocationReason ?? null,
     revoked_at: purchase.revokedAt ?? null,
   };
 }

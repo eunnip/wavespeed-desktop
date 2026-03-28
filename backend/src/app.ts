@@ -3,6 +3,10 @@ import path from "node:path";
 
 import { verifyAppleIdentityToken, type AppleIdentity } from "./apple/verify-identity-token.ts";
 import {
+  fetchAppStoreTransactions,
+  type AppStoreTransactionRecord,
+} from "./app-store/server-api.ts";
+import {
   verifyAppStoreTransaction,
   type VerifiedAppStoreTransaction,
 } from "./app-store/transaction-verifier.ts";
@@ -37,6 +41,10 @@ type BackendConfig = {
   appStoreBundleId: string;
   appStoreEnvironment: string;
   appStoreRequireSignedTransactions: boolean;
+  appStoreIssuerId: string;
+  appStoreKeyId: string;
+  appStorePrivateKeyPem: string;
+  appStoreEnableServerApi: boolean;
 };
 
 type Dependencies = {
@@ -214,6 +222,15 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
     return config.appleSignInEnforceVerification || Boolean(config.appleSignInClientId);
   }
 
+  function shouldUseAppStoreServerApi(): boolean {
+    return (
+      config.appStoreEnableServerApi &&
+      Boolean(config.appStoreIssuerId) &&
+      Boolean(config.appStoreKeyId) &&
+      Boolean(config.appStorePrivateKeyPem)
+    );
+  }
+
   async function resolveAppleIdentity(
     identityToken: string,
     nonce?: string,
@@ -228,6 +245,66 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
       rawNonce: nonce,
       requireNonce: config.appleSignInRequireNonce,
     });
+  }
+
+  async function verifyTransactionWithAppleServer(
+    transactionId: string,
+    productId: string,
+    appAccountToken?: string,
+  ): Promise<VerifiedAppStoreTransaction | undefined> {
+    if (!shouldUseAppStoreServerApi()) {
+      return undefined;
+    }
+
+    const transactions = await fetchAppStoreTransactions(
+      {
+        issuerId: config.appStoreIssuerId,
+        keyId: config.appStoreKeyId,
+        privateKeyPem: config.appStorePrivateKeyPem,
+        environment: config.appStoreEnvironment || undefined,
+      },
+      transactionId,
+    );
+
+    const match = transactions.find((candidate) => candidate.transactionId === transactionId);
+    if (!match) {
+      throw new Error("Apple server verification could not find the requested transaction");
+    }
+    if (match.productId && match.productId !== productId) {
+      throw new Error("Apple server verification returned a mismatched product");
+    }
+    if (config.appStoreBundleId && match.bundleId && match.bundleId !== config.appStoreBundleId) {
+      throw new Error("Apple server verification returned a mismatched bundle ID");
+    }
+    if (
+      appAccountToken &&
+      match.appAccountToken &&
+      match.appAccountToken.toLowerCase() !== appAccountToken.toLowerCase()
+    ) {
+      throw new Error("Apple server verification returned a mismatched app account token");
+    }
+
+    return {
+      expiresAt: match.expiresAt,
+      purchaseDate: match.purchaseDate,
+      originalPurchaseDate: match.originalPurchaseDate,
+      revokedAt: match.revokedAt,
+      revocationReason: match.revocationReason,
+      environment: match.environment,
+      ownershipType: match.ownershipType,
+      webOrderLineItemId: match.webOrderLineItemId,
+      signedTransactionInfo: match.signedTransactionInfo,
+    };
+  }
+
+  function chooseLatestRestorableTransaction(
+    transactions: AppStoreTransactionRecord[],
+    originalTransactionId: string,
+  ): AppStoreTransactionRecord | undefined {
+    return transactions
+      .filter((candidate) => candidate.originalTransactionId === originalTransactionId)
+      .sort((left, right) => (right.expiresAt ?? right.purchaseDate ?? "").localeCompare(left.expiresAt ?? left.purchaseDate ?? ""))
+      .at(0);
   }
 
   async function activePurchaseForUser(userId: string): Promise<PurchaseRecord | undefined> {
@@ -565,16 +642,22 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
 
       let verifiedTransaction: VerifiedAppStoreTransaction | undefined;
       try {
-        verifiedTransaction = verifyAppStoreTransaction({
-          signedTransactionInfo: body.signed_transaction_info,
-          transactionId: body.transaction_id,
-          originalTransactionId: body.original_transaction_id,
-          productId: body.product_id,
-          appAccountToken: body.app_account_token,
-          expectedBundleId: config.appStoreBundleId || undefined,
-          expectedEnvironment: config.appStoreEnvironment || undefined,
-          requireSignedTransaction: config.appStoreRequireSignedTransactions,
-        });
+        verifiedTransaction =
+          (await verifyTransactionWithAppleServer(
+            body.transaction_id,
+            body.product_id,
+            body.app_account_token,
+          )) ??
+          verifyAppStoreTransaction({
+            signedTransactionInfo: body.signed_transaction_info,
+            transactionId: body.transaction_id,
+            originalTransactionId: body.original_transaction_id,
+            productId: body.product_id,
+            appAccountToken: body.app_account_token,
+            expectedBundleId: config.appStoreBundleId || undefined,
+            expectedEnvironment: config.appStoreEnvironment || undefined,
+            requireSignedTransaction: config.appStoreRequireSignedTransactions,
+          });
       } catch (error) {
         throw {
           status: 422,
@@ -613,8 +696,10 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
         data: {
           accepted: true,
           message:
-            verifiedTransaction
-              ? "Transaction accepted and validated against signed StoreKit payload fields."
+            shouldUseAppStoreServerApi()
+              ? "Transaction accepted and verified with Apple."
+              : verifiedTransaction
+                ? "Transaction accepted and validated against signed StoreKit payload fields."
               : config.mode === "production"
                 ? "Transaction accepted. Configure signed transaction enforcement before production launch."
                 : "Transaction accepted in local development mode.",
@@ -627,33 +712,64 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
       const user = ensureAuthenticated(context);
       const body = await parseJsonBody<{ original_transaction_ids?: string[] }>(request);
       const originalIds = body.original_transaction_ids ?? [];
-      const existing = (await store.listPurchasesForUser(user.id)).find(
-        (purchase) =>
+      const existing = (await store.listPurchasesForUser(user.id)).find((purchase) => {
+        return (
           purchase.originalTransactionId &&
           originalIds.includes(purchase.originalTransactionId) &&
-          !purchase.revokedAt,
-      );
+          !purchase.revokedAt
+        );
+      });
 
-      if (!existing && originalIds.length > 0) {
-        await store.insertPurchase({
-          id: createId("iap"),
-          userId: user.id,
-          productId: config.productIDs[0],
-          transactionId: createId("tx"),
-          originalTransactionId: originalIds[0],
-          expiresAt: addDays(new Date(), config.defaultSubscriptionDays),
-          source: "restore",
-          environment: config.mode === "production" ? "production" : "sandbox",
-          createdAt: nowIso(),
-        });
+      if (!existing && originalIds.length > 0 && shouldUseAppStoreServerApi()) {
+        for (const originalTransactionId of originalIds) {
+          const transactions = await fetchAppStoreTransactions(
+            {
+              issuerId: config.appStoreIssuerId,
+              keyId: config.appStoreKeyId,
+              privateKeyPem: config.appStorePrivateKeyPem,
+              environment: config.appStoreEnvironment || undefined,
+            },
+            originalTransactionId,
+          );
+          const latest = chooseLatestRestorableTransaction(transactions, originalTransactionId);
+          if (!latest || !latest.productId || !latest.transactionId) {
+            continue;
+          }
+          const current = await store.findPurchaseByTransactionId(latest.transactionId);
+          if (current) {
+            continue;
+          }
+          await store.insertPurchase({
+            id: createId("iap"),
+            userId: user.id,
+            productId: latest.productId,
+            transactionId: latest.transactionId,
+            originalTransactionId: latest.originalTransactionId,
+            appAccountToken: latest.appAccountToken,
+            signedTransactionInfo: latest.signedTransactionInfo,
+            expiresAt: latest.expiresAt ?? addDays(new Date(), config.defaultSubscriptionDays),
+            source: "restore",
+            environment:
+              latest.environment ?? (config.mode === "production" ? "production" : "sandbox"),
+            createdAt: nowIso(),
+            purchaseDate: latest.purchaseDate,
+            originalPurchaseDate: latest.originalPurchaseDate,
+            webOrderLineItemId: latest.webOrderLineItemId,
+            ownershipType: latest.ownershipType,
+            revocationReason: latest.revocationReason,
+            revokedAt: latest.revokedAt,
+          });
+        }
       }
 
       return jsonResponse(context.requestId, 200, {
         data: {
           accepted: true,
           message:
-            config.mode === "production"
-              ? "Restore processed. Replace this with App Store verification before production launch."
+            shouldUseAppStoreServerApi()
+              ? "Restore processed with Apple transaction history."
+              : config.mode === "production"
+                ? "Restore processed. Configure Apple server verification before production launch."
               : "Restore processed in local development mode.",
           entitlement: await entitlementSummary(user.id),
         },

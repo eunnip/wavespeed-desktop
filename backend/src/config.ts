@@ -121,6 +121,10 @@ export const config = {
     "IOS_BACKEND_APP_STORE_REQUIRE_SIGNED_TRANSACTIONS",
     false,
   ),
+  appStoreIssuerId: process.env.IOS_BACKEND_APP_STORE_ISSUER_ID ?? "",
+  appStoreKeyId: process.env.IOS_BACKEND_APP_STORE_KEY_ID ?? "",
+  appStorePrivateKeyPem: process.env.IOS_BACKEND_APP_STORE_PRIVATE_KEY_PEM ?? "",
+  appStoreEnableServerApi: readBoolean("IOS_BACKEND_APP_STORE_ENABLE_SERVER_API", false),
 };
 
 export function requireConfig(value: string, message: string): string {

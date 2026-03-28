@@ -80,7 +80,8 @@ The app uses this as the final confirmation step after purchase or restore.
 
 ## Backend requirements
 
-- Verify transactions with StoreKit 2 JWS or App Store Server API.
+- Prefer App Store Server API as the production source of truth.
+- Use signed StoreKit transaction payloads only as an optimization or fallback when available.
 - Persist:
   - user id
   - product id
@@ -95,6 +96,20 @@ The app uses this as the final confirmation step after purchase or restore.
   - billing retry
   - refunds/revocations
   - upgrades/downgrades
+
+## Recommended production verification path
+
+1. App sends `transaction_id`, `original_transaction_id`, `product_id`, and `app_account_token`.
+2. Backend calls App Store Server API `Get Transaction History`.
+3. Backend derives the effective entitlement from Apple transaction history.
+4. Backend stores normalized purchase rows and returns `GET /v1/me/entitlements` data.
+
+Required backend env for this path:
+
+- `IOS_BACKEND_APP_STORE_ISSUER_ID`
+- `IOS_BACKEND_APP_STORE_KEY_ID`
+- `IOS_BACKEND_APP_STORE_PRIVATE_KEY_PEM`
+- `IOS_BACKEND_APP_STORE_ENABLE_SERVER_API=true`
 
 ## Failure behavior
 

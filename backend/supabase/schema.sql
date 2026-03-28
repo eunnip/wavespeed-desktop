@@ -2,11 +2,16 @@ create table if not exists public.ios_users (
   id text primary key,
   apple_subject text not null unique,
   email text,
+  email_verified boolean,
+  is_private_email boolean,
   display_name text,
   deleted_at timestamptz,
   created_at timestamptz not null,
   updated_at timestamptz not null
 );
+
+alter table public.ios_users add column if not exists email_verified boolean;
+alter table public.ios_users add column if not exists is_private_email boolean;
 
 create table if not exists public.ios_refresh_sessions (
   token_hash text primary key,
@@ -45,8 +50,19 @@ create table if not exists public.ios_purchases (
   source text not null check (source in ('sync', 'restore')),
   environment text,
   created_at timestamptz not null,
+  purchase_date timestamptz,
+  original_purchase_date timestamptz,
+  web_order_line_item_id text,
+  ownership_type text,
+  revocation_reason text,
   revoked_at timestamptz
 );
+
+alter table public.ios_purchases add column if not exists purchase_date timestamptz;
+alter table public.ios_purchases add column if not exists original_purchase_date timestamptz;
+alter table public.ios_purchases add column if not exists web_order_line_item_id text;
+alter table public.ios_purchases add column if not exists ownership_type text;
+alter table public.ios_purchases add column if not exists revocation_reason text;
 
 create index if not exists ios_purchases_user_id_idx on public.ios_purchases (user_id);
 create index if not exists ios_purchases_original_transaction_id_idx on public.ios_purchases (original_transaction_id);

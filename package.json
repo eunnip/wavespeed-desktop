@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "backend:build": "node --experimental-transform-types --check backend/src/server.ts && node --experimental-transform-types --check api/health.ts && node --experimental-transform-types --check \"api/v1/[...route].ts\"",
+    "backend:build": "node --experimental-transform-types --check backend/src/server.ts && node --experimental-transform-types --check api/backend.ts && node --experimental-transform-types --check api/health.ts && node --experimental-transform-types --check \"api/v1/[...route].ts\"",
     "backend:start": "node --experimental-transform-types backend/src/server.ts",
     "backend:check": "npm run backend:build",
     "preview": "electron-vite preview",
