@@ -17,8 +17,8 @@ Core:
 
 ```text
 IOS_BACKEND_BASE_URL=https://your-api-domain.example
-IOS_BACKEND_DATA_DIR=/tmp/wavespeed-ios-backend
-IOS_BACKEND_PRODUCT_IDS=ai.wavespeed.pro.monthly
+IOS_BACKEND_DATA_DIR=/tmp/photogstudio-ios-backend
+IOS_BACKEND_PRODUCT_IDS=com.altarisgroup.photogstudio.pro.monthly
 IOS_BACKEND_DATABASE_PROVIDER=supabase
 IOS_BACKEND_BLOB_PROVIDER=r2
 IOS_BACKEND_JOB_MODE=inline
@@ -36,7 +36,7 @@ Cloudflare R2:
 
 ```text
 R2_ACCOUNT_ID=...
-R2_BUCKET=wavespeed-ios
+R2_BUCKET=photogstudio-ios
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
 ```

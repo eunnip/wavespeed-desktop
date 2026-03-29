@@ -1,6 +1,6 @@
 # iOS App Build
 
-This repo now includes a buildable and archivable iOS target at `ios/WaveSpeedIOS.xcodeproj`.
+This repo now includes a buildable and archivable iOS target at `ios/PhotoGStudio.xcodeproj`.
 
 ## Requirements
 
@@ -10,8 +10,8 @@ This repo now includes a buildable and archivable iOS target at `ios/WaveSpeedIO
 
 ## Project Setup
 
-1. Open [ios/WaveSpeedIOS.xcodeproj](/Users/stephenyip/wavespeed/wavespeed-desktop/ios/WaveSpeedIOS.xcodeproj) in Xcode.
-2. In the `WaveSpeedIOS` target, set your Apple team under Signing & Capabilities.
+1. Open [ios/PhotoGStudio.xcodeproj](/Users/stephenyip/wavespeed/wavespeed-desktop/ios/PhotoGStudio.xcodeproj) in Xcode.
+2. In the `PhotoGStudio` target, set your Apple team under Signing & Capabilities.
 3. Adjust values in:
    - [ios/Config/Debug.xcconfig](/Users/stephenyip/wavespeed/wavespeed-desktop/ios/Config/Debug.xcconfig)
    - [ios/Config/Release.xcconfig](/Users/stephenyip/wavespeed/wavespeed-desktop/ios/Config/Release.xcconfig)
@@ -23,8 +23,8 @@ From the repo root:
 
 ```bash
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-xcodebuild -project ios/WaveSpeedIOS.xcodeproj \
--scheme WaveSpeedIOS \
+xcodebuild -project ios/PhotoGStudio.xcodeproj \
+-scheme PhotoGStudio \
 -configuration Debug \
 -derivedDataPath /tmp/wavespeed-ios-derived \
 -destination 'generic/platform=iOS' \
@@ -35,17 +35,17 @@ CODE_SIGNING_ALLOWED=NO build
 
 ```bash
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
-xcodebuild -project ios/WaveSpeedIOS.xcodeproj \
--scheme WaveSpeedIOS \
+xcodebuild -project ios/PhotoGStudio.xcodeproj \
+-scheme PhotoGStudio \
 -configuration Release \
 -derivedDataPath /tmp/wavespeed-ios-derived \
 -destination 'generic/platform=iOS' \
-archive -archivePath /tmp/wavespeed-ios-archive/WaveSpeedIOS.xcarchive
+archive -archivePath /tmp/wavespeed-ios-archive/PhotoGStudio.xcarchive
 ```
 
 Or use Xcode:
 
-1. Select the `WaveSpeedIOS` scheme.
+1. Select the `PhotoGStudio` scheme.
 2. Choose `Any iOS Device (arm64)`.
 3. Run `Product > Archive`.
 4. In Organizer, validate and export.

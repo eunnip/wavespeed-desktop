@@ -2,7 +2,7 @@ import Foundation
 import Security
 
 enum KeychainStore {
-    private static let service = "ai.wavespeed.iosapp.session"
+    private static let service = "com.altarisgroup.photogstudio.session"
     private static let accessTokenAccount = "access_token"
     private static let refreshTokenAccount = "refresh_token"
     private static let sessionBlobAccount = "session_blob"

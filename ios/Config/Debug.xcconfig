@@ -1,7 +1,7 @@
-APP_DISPLAY_NAME = WaveSpeedIOS
-APP_BUNDLE_IDENTIFIER = ai.wavespeed.standaloneios.dev
+APP_DISPLAY_NAME = PhotoGStudio
+APP_BUNDLE_IDENTIFIER = com.altarisgroup.photogstudio.dev
 APP_MARKETING_VERSION = 1.0
 APP_CURRENT_PROJECT_VERSION = 1
 WS_BACKEND_BASE_URL = https://example.com
 WS_ENVIRONMENT_NAME = development
-WS_SUBSCRIPTION_PRODUCT_IDS =
+WS_SUBSCRIPTION_PRODUCT_IDS = com.altarisgroup.photogstudio.pro.monthly

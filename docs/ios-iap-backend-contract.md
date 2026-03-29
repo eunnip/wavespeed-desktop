@@ -26,7 +26,7 @@ Request:
 
 ```json
 {
-  "product_id": "ai.wavespeed.pro.monthly",
+  "product_id": "com.altarisgroup.photogstudio.pro.monthly",
   "transaction_id": "2000001234567890",
   "original_transaction_id": "2000001234500000",
   "app_account_token": "11111111-2222-3333-4444-555555555555",
@@ -133,7 +133,7 @@ Expose `GET /v1/app-config` with:
 {
   "data": {
     "subscription_product_ids": [
-      "ai.wavespeed.pro.monthly"
+      "com.altarisgroup.photogstudio.pro.monthly"
     ],
     "subscription_management_url": "https://apps.apple.com/account/subscriptions",
     "privacy_url": "https://example.com/privacy",

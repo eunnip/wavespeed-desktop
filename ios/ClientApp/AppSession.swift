@@ -503,7 +503,7 @@ final class AppSession: ObservableObject {
     }
 
     private func loadMockSessionData() {
-        user = UserProfile(id: "mock-user", displayName: "WaveSpeed Tester", email: "ios@example.com")
+        user = UserProfile(id: "mock-user", displayName: "PhotoGStudio Tester", email: "ios@example.com")
         entitlement = makeMockEntitlement()
         entitlementState = EntitlementState(
             summary: entitlement,

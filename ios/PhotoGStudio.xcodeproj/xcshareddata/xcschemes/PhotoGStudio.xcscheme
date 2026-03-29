@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "2610"
-   version = "1.7">
+   version = "1.8">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES">
@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A50000000000000000000001"
-               BuildableName = "WaveSpeedIOS.app"
-               BlueprintName = "WaveSpeedIOS"
-               ReferencedContainer = "container:WaveSpeedIOS.xcodeproj">
+               BuildableName = "PhotoGStudio.app"
+               BlueprintName = "PhotoGStudio"
+               ReferencedContainer = "container:PhotoGStudio.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -27,6 +27,8 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
+      <Testables>
+      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
@@ -41,9 +43,9 @@
       <BuildableReference
          BuildableIdentifier = "primary"
          BlueprintIdentifier = "A50000000000000000000001"
-         BuildableName = "WaveSpeedIOS.app"
-         BlueprintName = "WaveSpeedIOS"
-         ReferencedContainer = "container:WaveSpeedIOS.xcodeproj">
+         BuildableName = "PhotoGStudio.app"
+         BlueprintName = "PhotoGStudio"
+         ReferencedContainer = "container:PhotoGStudio.xcodeproj">
       </BuildableReference>
    </LaunchAction>
    <ProfileAction
@@ -55,9 +57,9 @@
       <BuildableReference
          BuildableIdentifier = "primary"
          BlueprintIdentifier = "A50000000000000000000001"
-         BuildableName = "WaveSpeedIOS.app"
-         BlueprintName = "WaveSpeedIOS"
-         ReferencedContainer = "container:WaveSpeedIOS.xcodeproj">
+         BuildableName = "PhotoGStudio.app"
+         BlueprintName = "PhotoGStudio"
+         ReferencedContainer = "container:PhotoGStudio.xcodeproj">
       </BuildableReference>
    </ProfileAction>
    <AnalyzeAction

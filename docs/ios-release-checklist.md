@@ -5,6 +5,7 @@
 - Set the real bundle identifier and signing team in the Xcode target.
 - Replace placeholder app icons in [ios/ClientApp/Assets.xcassets](/Users/stephenyip/wavespeed/wavespeed-desktop/ios/ClientApp/Assets.xcassets).
 - Set production values in [ios/Config/Release.xcconfig](/Users/stephenyip/wavespeed/wavespeed-desktop/ios/Config/Release.xcconfig).
+- Confirm the Xcode target name, scheme name, and bundle identifier all use `PhotoGStudio` branding.
 - Confirm privacy, terms, and support URLs are returned by your backend app config.
 - Confirm backend auth endpoints exist for:
   - sign in with Apple

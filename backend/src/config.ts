@@ -78,11 +78,11 @@ export const config = {
   baseURL: process.env.IOS_BACKEND_BASE_URL ?? "",
   dataDir:
     process.env.IOS_BACKEND_DATA_DIR ??
-    (isVercel ? "/tmp/wavespeed-ios-backend" : path.resolve(backendDir, "data")),
+    (isVercel ? "/tmp/photogstudio-ios-backend" : path.resolve(backendDir, "data")),
   accessTokenTTLSeconds: readInt("IOS_BACKEND_ACCESS_TTL_SECONDS", 60 * 30),
   refreshTokenTTLDays: readInt("IOS_BACKEND_REFRESH_TTL_DAYS", 60),
   defaultSubscriptionDays: readInt("IOS_BACKEND_SUBSCRIPTION_DAYS", 30),
-  productIDs: readStringArray("IOS_BACKEND_PRODUCT_IDS", ["ai.wavespeed.pro.monthly"]),
+  productIDs: readStringArray("IOS_BACKEND_PRODUCT_IDS", ["com.altarisgroup.photogstudio.pro.monthly"]),
   supportEmail: process.env.IOS_BACKEND_SUPPORT_EMAIL ?? "support@example.com",
   privacyURL: process.env.IOS_BACKEND_PRIVACY_URL ?? "https://example.com/privacy",
   termsURL: process.env.IOS_BACKEND_TERMS_URL ?? "https://example.com/terms",

@@ -55,6 +55,7 @@
 		A2000000000000000000000B /* JobDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobDetailView.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		A2000000000000000000000D /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		A2000000000000000000000E /* PhotoGStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = PhotoGStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000F /* APIConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIConfiguration.swift; path = BackendAPI/Sources/BackendAPI/APIConfiguration.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000010 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIError.swift; path = BackendAPI/Sources/BackendAPI/APIError.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000011 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = JSONValue.swift; path = BackendAPI/Sources/BackendAPI/JSONValue.swift; sourceTree = SOURCE_ROOT; };
@@ -76,7 +77,6 @@
 		A20000000000000000000021 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000022 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Config/Debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000023 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Config/Release.xcconfig; sourceTree = SOURCE_ROOT; };
-		A2000000000000000000000E /* WaveSpeedIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = WaveSpeedIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,8 +102,6 @@
 		};
 		A40000000000000000000002 /* ClientApp */ = {
 			isa = PBXGroup;
-			path = ClientApp;
-			sourceTree = "<group>";
 			children = (
 				A20000000000000000000001 /* ClientApp.swift */,
 				A20000000000000000000002 /* AppSession.swift */,
@@ -138,11 +136,13 @@
 				A20000000000000000000018 /* PreferencesClient.swift */,
 				A20000000000000000000019 /* UploadsClient.swift */,
 			);
+			path = ClientApp;
+			sourceTree = "<group>";
 		};
 		A40000000000000000000003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A2000000000000000000000E /* WaveSpeedIOS.app */,
+				A2000000000000000000000E /* PhotoGStudio.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -150,9 +150,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A50000000000000000000001 /* WaveSpeedIOS */ = {
+		A50000000000000000000001 /* PhotoGStudio */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A70000000000000000000002 /* Build configuration list for PBXNativeTarget "WaveSpeedIOS" */;
+			buildConfigurationList = A70000000000000000000002 /* Build configuration list for PBXNativeTarget "PhotoGStudio" */;
 			buildPhases = (
 				A30000000000000000000001 /* Frameworks */,
 				A30000000000000000000002 /* Sources */,
@@ -162,11 +162,11 @@
 			);
 			dependencies = (
 			);
-			name = WaveSpeedIOS;
+			name = PhotoGStudio;
 			packageProductDependencies = (
 			);
-			productName = WaveSpeedIOS;
-			productReference = A2000000000000000000000E /* WaveSpeedIOS.app */;
+			productName = PhotoGStudio;
+			productReference = A2000000000000000000000E /* PhotoGStudio.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -184,7 +184,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A70000000000000000000001B /* Build configuration list for PBXProject "WaveSpeedIOS" */;
+			buildConfigurationList = A70000000000000000000001B /* Build configuration list for PBXProject "PhotoGStudio" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -199,7 +199,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A50000000000000000000001 /* WaveSpeedIOS */,
+				A50000000000000000000001 /* PhotoGStudio */,
 			);
 		};
 /* End PBXProject section */
@@ -308,17 +308,18 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(APP_CURRENT_PROJECT_VERSION)";
+				DEVELOPMENT_TEAM = FKVU23U6Z6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(APP_DISPLAY_NAME)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Capture a photo to use as generation input.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save generated outputs to your library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select an image to use as generation input.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save generated outputs to your library.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select an image to use as generation input.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Capture a photo to use as generation input.";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_WSBackendBaseURL = "$(WS_BACKEND_BASE_URL)";
 				INFOPLIST_KEY_WSEnvironmentName = "$(WS_ENVIRONMENT_NAME)";
 				INFOPLIST_KEY_WSSubscriptionProductIDs = "$(WS_SUBSCRIPTION_PRODUCT_IDS)";
@@ -345,17 +346,18 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(APP_CURRENT_PROJECT_VERSION)";
+				DEVELOPMENT_TEAM = FKVU23U6Z6;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(APP_DISPLAY_NAME)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Capture a photo to use as generation input.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save generated outputs to your library.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select an image to use as generation input.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Save generated outputs to your library.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Select an image to use as generation input.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Capture a photo to use as generation input.";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_WSBackendBaseURL = "$(WS_BACKEND_BASE_URL)";
 				INFOPLIST_KEY_WSEnvironmentName = "$(WS_ENVIRONMENT_NAME)";
 				INFOPLIST_KEY_WSSubscriptionProductIDs = "$(WS_SUBSCRIPTION_PRODUCT_IDS)";
@@ -377,7 +379,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A70000000000000000000001B /* Build configuration list for PBXProject "WaveSpeedIOS" */ = {
+		A70000000000000000000001B /* Build configuration list for PBXProject "PhotoGStudio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A70000000000000000000003 /* Debug */,
@@ -386,7 +388,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A70000000000000000000002 /* Build configuration list for PBXNativeTarget "WaveSpeedIOS" */ = {
+		A70000000000000000000002 /* Build configuration list for PBXNativeTarget "PhotoGStudio" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A70000000000000000000005 /* Debug */,
@@ -396,7 +398,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
 	};
 	rootObject = A70000000000000000000001 /* Project object */;
 }
