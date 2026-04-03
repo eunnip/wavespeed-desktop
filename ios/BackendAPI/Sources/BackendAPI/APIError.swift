@@ -20,6 +20,8 @@ public struct APIError: Error, LocalizedError, Sendable {
     public let category: APIErrorCategory
     public let requestID: String?
     public let retryAfterSeconds: Int?
+    public let requestMethod: String?
+    public let requestURL: String?
 
     public init(
         message: String,
@@ -28,7 +30,9 @@ public struct APIError: Error, LocalizedError, Sendable {
         details: Data? = nil,
         category: APIErrorCategory = .unknown,
         requestID: String? = nil,
-        retryAfterSeconds: Int? = nil
+        retryAfterSeconds: Int? = nil,
+        requestMethod: String? = nil,
+        requestURL: String? = nil
     ) {
         self.message = message
         self.code = code
@@ -37,6 +41,8 @@ public struct APIError: Error, LocalizedError, Sendable {
         self.category = category
         self.requestID = requestID
         self.retryAfterSeconds = retryAfterSeconds
+        self.requestMethod = requestMethod
+        self.requestURL = requestURL
     }
 
     public var errorDescription: String? {

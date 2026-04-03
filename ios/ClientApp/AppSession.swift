@@ -52,7 +52,23 @@ final class AppSession: ObservableObject {
 
     init() {
         let defaultBackendURL = Bundle.main.object(forInfoDictionaryKey: "WSBackendBaseURL") as? String
-        self.backendURLString = UserDefaults.standard.string(forKey: "backend_url") ?? defaultBackendURL ?? "https://example.com"
+        let environmentName = (Bundle.main.object(forInfoDictionaryKey: "WSEnvironmentName") as? String) ?? "development"
+        let storedBackendURL = UserDefaults.standard.string(forKey: "backend_url")
+        let isProduction = environmentName == APIEnvironment.production.rawValue
+        let resolvedDefaultBackendURL = Self.normalizedBackendURLString(
+            from: defaultBackendURL,
+            environmentName: environmentName
+        )
+        let resolvedStoredBackendURL = Self.normalizedBackendURLString(
+            from: storedBackendURL,
+            environmentName: environmentName
+        )
+        self.backendURLString = isProduction
+            ? (resolvedDefaultBackendURL ?? "https://example.com")
+            : (resolvedStoredBackendURL ?? resolvedDefaultBackendURL ?? "https://example.com")
+        if isProduction, let resolvedDefaultBackendURL {
+            UserDefaults.standard.set(resolvedDefaultBackendURL, forKey: "backend_url")
+        }
         let storedSessionTokens = KeychainStore.loadSessionTokens()
         let storedAccessToken = storedSessionTokens?.accessToken ?? KeychainStore.loadAccessToken()
         let storedRefreshToken = storedSessionTokens?.refreshToken ?? KeychainStore.loadRefreshToken()
@@ -76,8 +92,24 @@ final class AppSession: ObservableObject {
         sessionTokens?.refreshToken ?? ""
     }
 
+    private var configuredBackendURLString: String? {
+        Self.normalizedBackendURLString(
+            from: Bundle.main.object(forInfoDictionaryKey: "WSBackendBaseURL") as? String,
+            environmentName: environmentName
+        )
+    }
+
+    var activeBackendURLString: String {
+        if environmentName == APIEnvironment.production.rawValue,
+           let configuredBackendURLString
+        {
+            return configuredBackendURLString
+        }
+        return backendURLString
+    }
+
     var backendURL: URL? {
-        URL(string: backendURLString)
+        URL(string: activeBackendURLString)
     }
 
     var isMockEnvironment: Bool {
@@ -86,6 +118,22 @@ final class AppSession: ObservableObject {
 
     var isDeveloperMode: Bool {
         environmentName != APIEnvironment.production.rawValue || isMockEnvironment
+    }
+
+    var allowsDeveloperConnection: Bool {
+        #if DEBUG
+        return isDeveloperMode
+        #else
+        return false
+        #endif
+    }
+
+    var allowsSimulatorMockSignIn: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
     }
 
     var environmentName: String {
@@ -159,7 +207,13 @@ final class AppSession: ObservableObject {
             errorText = authFailureReason?.guidance
             return
         }
-        self.backendURLString = normalizedURL
+        if environmentName == APIEnvironment.production.rawValue,
+           let configuredBackendURLString
+        {
+            self.backendURLString = configuredBackendURLString
+        } else {
+            self.backendURLString = normalizedURL
+        }
         self.sessionTokens = SessionTokens(
             accessToken: trimmedAccessToken,
             refreshToken: trimmedRefreshToken.isEmpty ? nil : trimmedRefreshToken
@@ -168,6 +222,14 @@ final class AppSession: ObservableObject {
         authFailureReason = nil
         persistCredentials()
         await refreshSessionData()
+    }
+
+    func signInWithMockSession() async {
+        await signIn(
+            backendURLString: "mock://local",
+            accessToken: "mock-access-token",
+            refreshToken: "mock-refresh-token"
+        )
     }
 
     func signInWithApplePlaceholder(
@@ -201,6 +263,7 @@ final class AppSession: ObservableObject {
         errorText = nil
         defer { isBusy = false }
         do {
+            backendURLString = activeBackendURLString
             let tokens = try await api.auth.signInWithApple(
                 identityToken: identityToken,
                 authorizationCode: authorizationCode,
@@ -503,7 +566,7 @@ final class AppSession: ObservableObject {
     }
 
     private func loadMockSessionData() {
-        user = UserProfile(id: "mock-user", displayName: "PhotoGStudio Tester", email: "ios@example.com")
+        user = UserProfile(id: "mock-user", displayName: "Photo G Tester", email: "hello@photo-g.app")
         entitlement = makeMockEntitlement()
         entitlementState = EntitlementState(
             summary: entitlement,
@@ -511,30 +574,87 @@ final class AppSession: ObservableObject {
             source: .backend
         )
         appConfig = AppConfig(
-            supportEmail: "support@example.com",
-            privacyURL: URL(string: "https://example.com/privacy"),
-            termsURL: URL(string: "https://example.com/terms"),
+            supportEmail: "hello@photo-g.app",
+            privacyURL: URL(string: "https://photo-g.app/privacy"),
+            termsURL: URL(string: "https://photo-g.app/terms"),
             subscriptionManagementURL: URL(string: "https://apps.apple.com/account/subscriptions"),
-            featuredModelIds: ["flux-pro", "seedream-4", "wan-2.2"]
+            featuredModelIds: ["portrait-polish", "motion-story", "product-polish", "editorial-glow"]
         )
         catalog = [
             CatalogModel(
-                id: "flux-pro",
-                name: "Flux Pro",
-                summary: "High-quality text-to-image generation.",
+                id: "portrait-polish",
+                name: "Portrait Polish",
+                summary: "Friendly portrait touch-ups with a clean studio finish.",
                 kind: "image"
             ),
             CatalogModel(
-                id: "seedream-4",
-                name: "SeeDream 4",
-                summary: "Fast image generation for previews and ideation.",
+                id: "soft-film",
+                name: "Soft Film",
+                summary: "Warm, editorial image styling for quick creative drafts.",
                 kind: "image"
             ),
             CatalogModel(
-                id: "wan-2.2",
-                name: "Wan 2.2",
-                summary: "Text-to-video generation.",
+                id: "motion-story",
+                name: "Motion Story",
+                summary: "Short moving scenes for placeholder storytelling demos.",
                 kind: "video"
+            ),
+            CatalogModel(
+                id: "editorial-glow",
+                name: "Editorial Glow",
+                summary: "Glossy magazine-inspired lighting and color direction.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "product-polish",
+                name: "Product Polish",
+                summary: "Clean product shots with premium light shaping and detail.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "style-shift",
+                name: "Style Shift",
+                summary: "Turn a reference shot into a fresh mood board direction.",
+                kind: "edit",
+                requiresImageInput: true
+            ),
+            CatalogModel(
+                id: "reframe-pro",
+                name: "Reframe Pro",
+                summary: "Extend and rebalance composition for social, web, and print crops.",
+                kind: "edit",
+                requiresImageInput: true
+            ),
+            CatalogModel(
+                id: "storyboard-frame",
+                name: "Storyboard Frame",
+                summary: "Fast visual frames for scenes, pacing, and concept planning.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "character-lab",
+                name: "Character Lab",
+                summary: "Explore stylized characters, wardrobe, and expressive poses.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "scene-builder",
+                name: "Scene Builder",
+                summary: "Build cinematic environments with bold atmosphere and depth.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "photo-motion",
+                name: "Photo Motion",
+                summary: "Give a still image a subtle camera move and natural motion.",
+                kind: "video",
+                requiresImageInput: true
+            ),
+            CatalogModel(
+                id: "avatar-spark",
+                name: "Avatar Spark",
+                summary: "Create polished profile visuals with playful styling options.",
+                kind: "image"
             )
         ]
         jobs = makeMockJobs()
@@ -543,9 +663,9 @@ final class AppSession: ObservableObject {
     private func makeMockEntitlement() -> EntitlementSummary {
         EntitlementSummary(
             isActive: true,
-            tierName: "Pro Monthly",
+            tierName: "Creator Access",
             renewalDate: ISO8601DateFormatter().string(from: Date().addingTimeInterval(86400 * 27)),
-            usageDescription: "Mock entitlement enabled for iOS development.",
+            usageDescription: "Placeholder access enabled for simulator previews.",
             managementURL: URL(string: "https://apps.apple.com/account/subscriptions")
         )
     }
@@ -554,9 +674,9 @@ final class AppSession: ObservableObject {
         [
             Job(
                 id: "job-mock-001",
-                modelId: "flux-pro",
-                modelName: "Flux Pro",
-                prompt: "Editorial portrait with cinematic lighting",
+                modelId: "portrait-polish",
+                modelName: "Portrait Polish",
+                prompt: "Bright natural portrait with clean skin tones and soft window light",
                 status: .completed,
                 createdAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-1800)),
                 updatedAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-1700)),
@@ -564,9 +684,9 @@ final class AppSession: ObservableObject {
             ),
             Job(
                 id: "job-mock-002",
-                modelId: "wan-2.2",
-                modelName: "Wan 2.2",
-                prompt: "Slow panning shot over neon city skyline",
+                modelId: "motion-story",
+                modelName: "Motion Story",
+                prompt: "Dreamy handheld clip of a beach walk at sunset",
                 status: .running,
                 createdAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-300)),
                 updatedAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-10)),
@@ -628,7 +748,11 @@ final class AppSession: ObservableObject {
     }
 
     private func persistCredentials() {
-        UserDefaults.standard.set(backendURLString, forKey: "backend_url")
+        let persistedBackendURL = activeBackendURLString
+        if backendURLString != persistedBackendURL {
+            backendURLString = persistedBackendURL
+        }
+        UserDefaults.standard.set(persistedBackendURL, forKey: "backend_url")
         if accessToken.isEmpty {
             KeychainStore.clearTokens()
         } else {
@@ -641,7 +765,11 @@ final class AppSession: ObservableObject {
     }
 
     private func normalizedBackendURLString(from value: String) -> String? {
-        guard !value.isEmpty else { return nil }
+        Self.normalizedBackendURLString(from: value, environmentName: environmentName)
+    }
+
+    private static func normalizedBackendURLString(from value: String?, environmentName: String) -> String? {
+        guard let value, !value.isEmpty else { return nil }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard var components = URLComponents(string: trimmed) else {
             return nil
@@ -652,7 +780,11 @@ final class AppSession: ObservableObject {
         guard let url = components.url else {
             return nil
         }
-        if !isDeveloperMode && url.scheme?.lowercased() != "https" {
+        let isProduction = environmentName == APIEnvironment.production.rawValue
+        if isProduction && url.scheme?.lowercased() != "https" {
+            return nil
+        }
+        if url.host?.isEmpty != false {
             return nil
         }
         return url.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -675,6 +807,25 @@ final class AppSession: ObservableObject {
     }
 
     private func displayMessage(for error: Error) -> String {
+        if let apiError = error as? APIError {
+            var lines: [String] = []
+            if let httpStatus = apiError.httpStatus {
+                lines.append("HTTP \(httpStatus): \(apiError.message)")
+            } else {
+                lines.append(apiError.message)
+            }
+            if let requestMethod = apiError.requestMethod,
+               let requestURL = apiError.requestURL,
+               !requestMethod.isEmpty,
+               !requestURL.isEmpty
+            {
+                lines.append("Request: \(requestMethod) \(requestURL)")
+            }
+            if let requestID = apiError.requestID, !requestID.isEmpty {
+                lines.append("Request ID: \(requestID)")
+            }
+            return lines.joined(separator: "\n")
+        }
         if let localized = error as? LocalizedError, let message = localized.errorDescription {
             return message
         }

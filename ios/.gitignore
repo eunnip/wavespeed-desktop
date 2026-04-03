@@ -1,0 +1,14 @@
+.DS_Store
+
+# Xcode user data
+PhotoGStudio.xcodeproj/project.xcworkspace/xcuserdata/
+PhotoGStudio.xcodeproj/xcuserdata/
+
+# SwiftPM
+InferenceAPI/.build/
+BackendAPI/.build/
+
+# Derived data and archives
+DerivedData/
+build/
+*.xcarchive

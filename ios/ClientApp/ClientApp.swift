@@ -9,6 +9,7 @@ struct ClientApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(session)
+                .tint(Color("AccentColor"))
                 .task {
                     await session.bootstrap()
                 }

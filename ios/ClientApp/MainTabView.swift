@@ -1,27 +1,45 @@
 import SwiftUI
 
 struct MainTabView: View {
+    @State private var selection: MainTab = .home
+    @State private var exploreKind: ExploreKind = .all
+
     var body: some View {
-        TabView {
-            CreateView()
+        TabView(selection: $selection) {
+            CreateView(selectedTab: $selection, exploreKind: $exploreKind)
+                .tag(MainTab.home)
                 .tabItem {
-                    Label("Create", systemImage: "sparkles")
+                    Label("Home", systemImage: selection == .home ? "house.fill" : "house")
                 }
 
-            ActivityView()
+            ActivityView(selectedKind: $exploreKind)
+                .tag(MainTab.explore)
                 .tabItem {
-                    Label("Activity", systemImage: "clock")
+                    Label("Explore", systemImage: selection == .explore ? "safari.fill" : "safari")
                 }
 
             LibraryView()
+                .tag(MainTab.library)
                 .tabItem {
-                    Label("Library", systemImage: "photo.on.rectangle")
+                    Label("Library", systemImage: selection == .library ? "photo.stack.fill" : "photo.on.rectangle.angled")
                 }
 
             AccountView()
+                .tag(MainTab.profile)
                 .tabItem {
-                    Label("Account", systemImage: "person.crop.circle")
+                    Label("Profile", systemImage: selection == .profile ? "person.crop.circle.fill" : "person.crop.circle")
                 }
         }
+        .tint(Color("AccentColor"))
+        .toolbarColorScheme(.dark, for: .tabBar)
+        .toolbarBackground(.visible, for: .tabBar)
+        .toolbarBackground(Color.black.opacity(0.94), for: .tabBar)
     }
+}
+
+enum MainTab: Hashable {
+    case home
+    case explore
+    case library
+    case profile
 }

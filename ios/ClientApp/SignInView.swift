@@ -15,11 +15,32 @@ struct SignInView: View {
         Group {
             if showsNavigationChrome {
                 NavigationStack {
-                    developerConnectionForm
-                        .navigationTitle("Welcome")
+                    ZStack {
+                        StudioBackgroundView()
+
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 24) {
+                                header
+
+                                StudioSurface {
+                                    developerConnectionContent
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 28)
+                            .padding(.bottom, 40)
+                        }
+                        .scrollIndicators(.hidden)
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .principal) {
+                            Text("Developer Connection")
+                                .font(.headline.weight(.semibold))
+                        }
+                    }
                 }
             } else {
-                developerConnectionForm
+                developerConnectionContent
             }
         }
         .onAppear {
@@ -29,49 +50,158 @@ struct SignInView: View {
         }
     }
 
-    private var developerConnectionForm: some View {
-        Form {
-            Section("Backend") {
-                TextField("https://api.yourproduct.com", text: $backendURL)
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                SecureField("Access token", text: $accessToken)
-                    .textContentType(.password)
-                SecureField("Refresh token (optional)", text: $refreshToken)
-                    .textContentType(.password)
-            }
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            StudioStatusBadge(
+                icon: "wrench.and.screwdriver.fill",
+                title: "Internal testing",
+                tint: Color("AccentColor")
+            )
 
-            Section {
-                Button {
-                    Task {
-                        await session.signIn(
-                            backendURLString: backendURL,
-                            accessToken: accessToken,
-                            refreshToken: refreshToken
-                        )
-                    }
-                } label: {
+            Text("Manual backend connection")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+
+            Text("Use direct backend tokens for development builds only. Once your production auth flow is live, this should stay tucked behind internal tooling.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var developerConnectionContent: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            StudioInputField(
+                title: "Backend URL",
+                prompt: "https://api.yourproduct.com",
+                text: $backendURL,
+                textContentType: nil,
+                keyboardType: .URL
+            )
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+
+            StudioSecureInputField(
+                title: "Access token",
+                prompt: "Enter access token",
+                text: $accessToken
+            )
+
+            StudioSecureInputField(
+                title: "Refresh token",
+                prompt: "Optional refresh token",
+                text: $refreshToken
+            )
+
+            Button(action: connect) {
+                HStack {
+                    Spacer()
                     if session.isBusy {
                         ProgressView()
+                            .tint(.white)
                     } else {
-                        Text("Connect")
+                        Label("Connect", systemImage: "arrow.right.circle.fill")
+                            .font(.headline.weight(.semibold))
                     }
+                    Spacer()
                 }
-                .disabled(backendURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || accessToken.isEmpty)
-                Button("Use mock backend") {
-                    Task {
-                        await session.signIn(
-                            backendURLString: "mock://local",
-                            accessToken: "mock-access-token",
-                            refreshToken: "mock-refresh-token"
-                        )
-                    }
-                }
-                .disabled(!session.isDeveloperMode)
-            } footer: {
-                Text("This build expects your own backend tokens. Replace this screen with Sign in with Apple or another production auth flow once your backend contract is finalized.")
             }
+            .buttonStyle(.plain)
+            .foregroundStyle(.white)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .background(
+                LinearGradient(
+                    colors: [Color("AccentColor"), Color(red: 0.98, green: 0.71, blue: 0.45)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
+            )
+            .disabled(isConnectDisabled || session.isBusy)
+            .opacity(isConnectDisabled || session.isBusy ? 0.7 : 1)
+
+            if session.allowsDeveloperConnection || session.allowsSimulatorMockSignIn {
+                Button(action: useMockBackend) {
+                    HStack {
+                        Spacer()
+                        Label(session.allowsDeveloperConnection ? "Use mock backend" : "Continue in simulator", systemImage: "hammer.fill")
+                            .font(.subheadline.weight(.semibold))
+                        Spacer()
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 14)
+                .background(Color.studioPanel, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            }
+
+            Text("This build expects your own backend tokens. Replace this path with Sign in with Apple or another production auth flow once your backend contract is finalized.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var isConnectDisabled: Bool {
+        backendURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || accessToken.isEmpty
+    }
+
+    private func connect() {
+        Task {
+            await session.signIn(
+                backendURLString: backendURL,
+                accessToken: accessToken,
+                refreshToken: refreshToken
+            )
+        }
+    }
+
+    private func useMockBackend() {
+        Task {
+            await session.signInWithMockSession()
+        }
+    }
+}
+
+private struct StudioInputField: View {
+    let title: String
+    let prompt: String
+    @Binding var text: String
+    let textContentType: UITextContentType?
+    let keyboardType: UIKeyboardType
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+
+            TextField(prompt, text: $text)
+                .textContentType(textContentType)
+                .keyboardType(keyboardType)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 15)
+                .background(Color.studioPanel, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+    }
+}
+
+private struct StudioSecureInputField: View {
+    let title: String
+    let prompt: String
+    @Binding var text: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+
+            SecureField(prompt, text: $text)
+                .textContentType(.password)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 15)
+                .background(Color.studioPanel, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
     }
 }

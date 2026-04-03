@@ -30,7 +30,7 @@ public final class HTTPClient: @unchecked Sendable {
     }
 
     public func get<T: Decodable>(_ path: String, queryItems: [URLQueryItem] = []) async throws -> T {
-        try await request(path, method: "GET", queryItems: queryItems, body: Optional<String>.none)
+        try await request(path, method: "GET", queryItems: queryItems, bodyData: nil)
     }
 
     public func post<Body: Encodable, Response: Decodable>(
@@ -78,7 +78,7 @@ public final class HTTPClient: @unchecked Sendable {
             accessToken: await accessTokenProvider()
         )
         let (responseData, response) = try await session.data(for: request)
-        try validateHTTP(response, data: responseData)
+        try validateHTTP(response, data: responseData, request: request)
         return try decodeEnvelope(UploadReceipt.self, from: responseData)
     }
 
@@ -91,17 +91,26 @@ public final class HTTPClient: @unchecked Sendable {
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
         let encoded = try encoder.encode(body)
+        return try await request(path, method: method, queryItems: queryItems, bodyData: encoded)
+    }
+
+    private func request<Response: Decodable>(
+        _ path: String,
+        method: String,
+        queryItems: [URLQueryItem],
+        bodyData: Data?
+    ) async throws -> Response {
         let token = await accessTokenProvider()
         let request = try makeRequest(
             path,
             method: method,
             queryItems: queryItems,
-            body: encoded,
+            body: bodyData,
             accessToken: token
         )
         let (responseData, response) = try await session.data(for: request)
         do {
-            try validateHTTP(response, data: responseData)
+            try validateHTTP(response, data: responseData, request: request)
             return try decodeEnvelope(Response.self, from: responseData)
         } catch let error as APIError where error.isUnauthorized {
             guard let accessTokenRefresher else {
@@ -115,11 +124,11 @@ public final class HTTPClient: @unchecked Sendable {
                 path,
                 method: method,
                 queryItems: queryItems,
-                body: encoded,
+                body: bodyData,
                 accessToken: refreshedToken
             )
             let (retryData, retryResponse) = try await session.data(for: retryRequest)
-            try validateHTTP(retryResponse, data: retryData)
+            try validateHTTP(retryResponse, data: retryData, request: retryRequest)
             return try decodeEnvelope(Response.self, from: retryData)
         }
     }
@@ -190,7 +199,7 @@ public final class HTTPClient: @unchecked Sendable {
         )
     }
 
-    private func validateHTTP(_ response: URLResponse, data: Data) throws {
+    private func validateHTTP(_ response: URLResponse, data: Data, request: URLRequest) throws {
         guard let http = response as? HTTPURLResponse else {
             return
         }
@@ -203,7 +212,9 @@ public final class HTTPClient: @unchecked Sendable {
                 category: category(for: http.statusCode, message: message),
                 requestID: http.value(forHTTPHeaderField: "X-Request-ID")
                     ?? http.value(forHTTPHeaderField: "X-Correlation-ID"),
-                retryAfterSeconds: Int(http.value(forHTTPHeaderField: "Retry-After") ?? "")
+                retryAfterSeconds: Int(http.value(forHTTPHeaderField: "Retry-After") ?? ""),
+                requestMethod: request.httpMethod,
+                requestURL: request.url?.absoluteString
             )
         }
     }
