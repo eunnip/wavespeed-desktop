@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "functions": {
+    "api/backend.ts": {
+      "includeFiles": "backend/src/**",
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/health",
+      "destination": "/api/backend?__pathname=/health"
+    },
+    {
+      "source": "/v1/:path*",
+      "destination": "/api/backend?__pathname=/v1/:path*"
+    }
+  ]
+}

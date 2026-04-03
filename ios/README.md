@@ -49,7 +49,7 @@ Current config files:
 Current defaults:
 
 - Debug backend URL: `https://example.com`
-- Release backend URL: `https://wavespeed-desktop.vercel.app`
+- Release backend URL: `https://wavespeed-desktop-stephen-yips-projects.vercel.app`
 - Environment names: `development` and `production`
 - Subscription product ID: `com.altarisgroup.photogstudio.pro.monthly`
 
