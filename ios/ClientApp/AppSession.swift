@@ -100,6 +100,9 @@ final class AppSession: ObservableObject {
     }
 
     var activeBackendURLString: String {
+        if usesMockBackendURL {
+            return backendURLString
+        }
         if environmentName == APIEnvironment.production.rawValue,
            let configuredBackendURLString
         {
@@ -113,7 +116,7 @@ final class AppSession: ObservableObject {
     }
 
     var isMockEnvironment: Bool {
-        environmentName == APIEnvironment.mock.rawValue || backendURL?.scheme?.lowercased() == "mock"
+        environmentName == APIEnvironment.mock.rawValue || usesMockBackendURL || hasMockSessionTokens
     }
 
     var isDeveloperMode: Bool {
@@ -377,6 +380,7 @@ final class AppSession: ObservableObject {
     }
 
     func refreshAccessTokenIfNeeded() async {
+        guard !isMockEnvironment else { return }
         guard !refreshToken.isEmpty else { return }
         let needsRefresh = accessToken.isEmpty || (sessionTokens?.isExpired() ?? false)
         guard needsRefresh else { return }
@@ -516,6 +520,9 @@ final class AppSession: ObservableObject {
     }
 
     private func refreshAccessTokenForHTTPClient() async throws -> String? {
+        guard !isMockEnvironment else {
+            return accessToken.isEmpty ? nil : accessToken
+        }
         if let task = tokenRefreshTask {
             let refreshed = try await task.value
             return refreshed.accessToken
@@ -578,82 +585,118 @@ final class AppSession: ObservableObject {
             privacyURL: URL(string: "https://photo-g.app/privacy"),
             termsURL: URL(string: "https://photo-g.app/terms"),
             subscriptionManagementURL: URL(string: "https://apps.apple.com/account/subscriptions"),
-            featuredModelIds: ["portrait-polish", "motion-story", "product-polish", "editorial-glow"]
+            featuredModelIds: ["bytedance-seedream-v5", "google-nano-banana-pro", "openai-gpt-image-1.5", "black-forest-flux-kontext-pro"]
         )
         catalog = [
             CatalogModel(
-                id: "portrait-polish",
-                name: "Portrait Polish",
-                summary: "Friendly portrait touch-ups with a clean studio finish.",
+                id: "bytedance-seedream-v3",
+                name: "Seedream v3",
+                summary: "ByteDance image model for polished image generations.",
                 kind: "image"
             ),
             CatalogModel(
-                id: "soft-film",
-                name: "Soft Film",
-                summary: "Warm, editorial image styling for quick creative drafts.",
+                id: "bytedance-seedream-v4",
+                name: "Seedream v4",
+                summary: "Sharper detail and stronger prompt following for still images.",
                 kind: "image"
             ),
             CatalogModel(
-                id: "motion-story",
-                name: "Motion Story",
-                summary: "Short moving scenes for placeholder storytelling demos.",
+                id: "bytedance-seedream-v5",
+                name: "Seedream v5",
+                summary: "Latest Seedream image generation tuned for premium quality.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "bytedance-seedream-v5-edit",
+                name: "Seedream v5 Edit",
+                summary: "Reference-based Seedream editing mode for guided image changes.",
+                kind: "edit",
+                requiresImageInput: true
+            ),
+            CatalogModel(
+                id: "bytedance-seedream-v5-sequential",
+                name: "Seedream v5 Sequential",
+                summary: "Sequential Seedream mode for consistent multi-step image outputs.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "google-nano-banana",
+                name: "Nano Banana",
+                summary: "Google family baseline model for compact image generation.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "google-nano-banana-2",
+                name: "Nano Banana 2",
+                summary: "Second generation Nano Banana with improved instruction following.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "google-nano-banana-pro",
+                name: "Nano Banana Pro",
+                summary: "Google’s leading Nano Banana tier for higher quality image outputs.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "openai-gpt-image-1",
+                name: "GPT Image 1",
+                summary: "OpenAI image model for prompt-driven visual generation.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "openai-gpt-image-1.5",
+                name: "GPT Image 1.5",
+                summary: "OpenAI’s current leading GPT Image family for high quality stills.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "openai-dall-e-3",
+                name: "DALL-E 3",
+                summary: "Legacy OpenAI image family kept for backward compatibility.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "black-forest-flux-kontext-pro",
+                name: "Flux Kontext Pro",
+                summary: "Black Forest Labs family for premium prompt-based image generation.",
+                kind: "image"
+            ),
+            CatalogModel(
+                id: "black-forest-flux-kontext-edit",
+                name: "Flux Kontext Edit",
+                summary: "Reference-based Flux Kontext edit mode.",
+                kind: "edit",
+                requiresImageInput: true
+            ),
+            CatalogModel(
+                id: "kling-v2.1-master",
+                name: "Kling v2.1 Master",
+                summary: "Kuaishou video generation family for premium motion output.",
                 kind: "video"
             ),
             CatalogModel(
-                id: "editorial-glow",
-                name: "Editorial Glow",
-                summary: "Glossy magazine-inspired lighting and color direction.",
-                kind: "image"
-            ),
-            CatalogModel(
-                id: "product-polish",
-                name: "Product Polish",
-                summary: "Clean product shots with premium light shaping and detail.",
-                kind: "image"
-            ),
-            CatalogModel(
-                id: "style-shift",
-                name: "Style Shift",
-                summary: "Turn a reference shot into a fresh mood board direction.",
+                id: "kling-v2.1-master-edit",
+                name: "Kling v2.1 Master Edit",
+                summary: "Reference-guided Kling mode for motion edits.",
                 kind: "edit",
                 requiresImageInput: true
             ),
             CatalogModel(
-                id: "reframe-pro",
-                name: "Reframe Pro",
-                summary: "Extend and rebalance composition for social, web, and print crops.",
-                kind: "edit",
-                requiresImageInput: true
+                id: "minimax-hailuo-video-02",
+                name: "Hailuo Video 02",
+                summary: "MiniMax video model for cinematic short clips.",
+                kind: "video"
             ),
             CatalogModel(
-                id: "storyboard-frame",
-                name: "Storyboard Frame",
-                summary: "Fast visual frames for scenes, pacing, and concept planning.",
-                kind: "image"
+                id: "minimax-hailuo-video-02-sequential",
+                name: "Hailuo Video 02 Sequential",
+                summary: "Sequential MiniMax mode for consistent motion sequences.",
+                kind: "video"
             ),
             CatalogModel(
-                id: "character-lab",
-                name: "Character Lab",
-                summary: "Explore stylized characters, wardrobe, and expressive poses.",
-                kind: "image"
-            ),
-            CatalogModel(
-                id: "scene-builder",
-                name: "Scene Builder",
-                summary: "Build cinematic environments with bold atmosphere and depth.",
-                kind: "image"
-            ),
-            CatalogModel(
-                id: "photo-motion",
-                name: "Photo Motion",
-                summary: "Give a still image a subtle camera move and natural motion.",
-                kind: "video",
-                requiresImageInput: true
-            ),
-            CatalogModel(
-                id: "avatar-spark",
-                name: "Avatar Spark",
-                summary: "Create polished profile visuals with playful styling options.",
+                id: "runway-gen4-image",
+                name: "Runway Gen-4 Image",
+                summary: "Runway still-image model for cinematic concepts.",
                 kind: "image"
             )
         ]
@@ -674,8 +717,8 @@ final class AppSession: ObservableObject {
         [
             Job(
                 id: "job-mock-001",
-                modelId: "portrait-polish",
-                modelName: "Portrait Polish",
+                modelId: "bytedance-seedream-v5",
+                modelName: "Seedream v5",
                 prompt: "Bright natural portrait with clean skin tones and soft window light",
                 status: .completed,
                 createdAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-1800)),
@@ -684,8 +727,8 @@ final class AppSession: ObservableObject {
             ),
             Job(
                 id: "job-mock-002",
-                modelId: "motion-story",
-                modelName: "Motion Story",
+                modelId: "kling-v2.1-master",
+                modelName: "Kling v2.1 Master",
                 prompt: "Dreamy handheld clip of a beach walk at sunset",
                 status: .running,
                 createdAt: ISO8601DateFormatter().string(from: Date().addingTimeInterval(-300)),
@@ -748,7 +791,7 @@ final class AppSession: ObservableObject {
     }
 
     private func persistCredentials() {
-        let persistedBackendURL = activeBackendURLString
+        let persistedBackendURL = usesMockBackendURL ? backendURLString : activeBackendURLString
         if backendURLString != persistedBackendURL {
             backendURLString = persistedBackendURL
         }
@@ -766,6 +809,16 @@ final class AppSession: ObservableObject {
 
     private func normalizedBackendURLString(from value: String) -> String? {
         Self.normalizedBackendURLString(from: value, environmentName: environmentName)
+    }
+
+    private var usesMockBackendURL: Bool {
+        URL(string: backendURLString)?.scheme?.lowercased() == "mock"
+    }
+
+    private var hasMockSessionTokens: Bool {
+        let access = sessionTokens?.accessToken ?? ""
+        let refresh = sessionTokens?.refreshToken ?? ""
+        return access.hasPrefix("mock-") || refresh.hasPrefix("mock-")
     }
 
     private static func normalizedBackendURLString(from value: String?, environmentName: String) -> String? {

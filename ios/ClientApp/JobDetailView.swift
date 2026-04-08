@@ -42,6 +42,10 @@ struct JobDetailView: View {
         }
         .navigationTitle("Job")
         .navigationBarTitleDisplayMode(.inline)
+        .task(id: jobID) {
+            guard let job, !job.status.isTerminal else { return }
+            await session.pollJobIfNeeded(jobID: jobID)
+        }
     }
 
     private func heroCard(job: Job) -> some View {
@@ -85,6 +89,25 @@ struct JobDetailView: View {
                     }
                 }
 
+                if !job.status.isTerminal {
+                    HStack(spacing: 12) {
+                        ProgressView()
+                            .tint(Color("AccentColor"))
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Generating your result")
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+                            Text("Stay on this screen while PhotoG polls for the finished output.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 14)
+                    .background(Color.studioPanel, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                }
+
                 if let errorMessage = job.errorMessage, !errorMessage.isEmpty {
                     Text(errorMessage)
                         .font(.subheadline)
@@ -119,17 +142,33 @@ struct JobDetailView: View {
     private func outputsSection(job: Job) -> some View {
         if job.outputs.isEmpty {
             StudioSurface {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 16) {
                     StudioSectionHeader(
                         eyebrow: "Outputs",
                         title: job.status.isTerminal ? "No outputs yet" : "Still generating"
                     )
 
-                    Text(job.status.isTerminal
-                        ? "This run finished without any saved output files."
-                        : "Keep this page open or refresh again in a moment while the result is being prepared.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    if job.status.isTerminal {
+                        Text("This run finished without any saved output files.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack(spacing: 12) {
+                                ProgressView()
+                                    .tint(Color("AccentColor"))
+                                Text("PhotoG is checking for the finished asset.")
+                                    .font(.subheadline.weight(.medium))
+                            }
+
+                            Text("The result page will update here as soon as the backend returns the generated image or video.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 18)
+                        .background(Color.studioPanel, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    }
                 }
             }
         } else {

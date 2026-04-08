@@ -125,6 +125,11 @@ export const config = {
   appStoreKeyId: process.env.IOS_BACKEND_APP_STORE_KEY_ID ?? "",
   appStorePrivateKeyPem: process.env.IOS_BACKEND_APP_STORE_PRIVATE_KEY_PEM ?? "",
   appStoreEnableServerApi: readBoolean("IOS_BACKEND_APP_STORE_ENABLE_SERVER_API", false),
+  allowUnsubscribedJobCreation: readBoolean(
+    "IOS_BACKEND_ALLOW_UNSUBSCRIBED_JOB_CREATION",
+    false,
+  ),
+  subscriptionBypassEmails: readStringArray("IOS_BACKEND_SUBSCRIPTION_BYPASS_EMAILS", []),
   waveSpeedAPIKey: process.env.WAVESPEED_API_KEY ?? "",
   waveSpeedAPIBaseURL:
     process.env.WAVESPEED_API_BASE_URL ?? "https://api.wavespeed.ai/api/v3",

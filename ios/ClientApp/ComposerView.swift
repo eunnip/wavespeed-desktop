@@ -1,31 +1,138 @@
 import PhotosUI
 import SwiftUI
 
+enum ComposerIntent: String, CaseIterable, Hashable, Identifiable {
+    case create
+    case edit
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .create:
+            return "Create"
+        case .edit:
+            return "Edit"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .create:
+            return "Start from a prompt and generate a fresh result."
+        case .edit:
+            return "Upload a picture and describe exactly how it should be changed."
+        }
+    }
+}
+
+struct ComposerDestination: Hashable {
+    let model: CatalogModel
+    let intent: ComposerIntent
+
+    init(model: CatalogModel, intent: ComposerIntent? = nil) {
+        self.model = model
+
+        if let intent {
+            self.intent = intent
+            return
+        }
+
+        let normalizedKind = (model.kind ?? "").lowercased()
+        if model.requiresImageInput || normalizedKind == "edit" {
+            self.intent = .edit
+        } else {
+            self.intent = .create
+        }
+    }
+}
+
+private struct JobDestination: Hashable, Identifiable {
+    let id: String
+}
+
 struct ComposerView: View {
     @EnvironmentObject private var session: AppSession
 
-    let model: CatalogModel
+    let destination: ComposerDestination
 
     @State private var prompt = ""
     @State private var negativePrompt = ""
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var selectedImageData: Data?
+    @State private var composerIntent: ComposerIntent
     @State private var isSubmitting = false
     @State private var submittedJob: Job?
+    @State private var activeJobDestination: JobDestination?
+
+    init(model: CatalogModel) {
+        let destination = ComposerDestination(model: model)
+        self.destination = destination
+        _composerIntent = State(initialValue: destination.intent)
+    }
+
+    init(destination: ComposerDestination) {
+        self.destination = destination
+        _composerIntent = State(initialValue: destination.intent)
+    }
+
+    private var model: CatalogModel {
+        destination.model
+    }
+
+    private var isEditMode: Bool {
+        composerIntent == .edit
+    }
+
+    private var supportsEditToggle: Bool {
+        true
+    }
+
+    private var referenceInputRequired: Bool {
+        model.requiresImageInput || isEditMode
+    }
+
+    private var shouldShowReferenceCard: Bool {
+        referenceInputRequired || selectedImageData != nil
+    }
+
+    private var currentInputLabel: String {
+        referenceInputRequired ? "Reference photo" : model.inputLabel
+    }
+
+    private var createModeLabel: String {
+        switch (model.kind ?? "").lowercased() {
+        case "video":
+            return "Text to Video"
+        default:
+            return "Text to Image"
+        }
+    }
+
+    private func modeLabel(_ intent: ComposerIntent) -> String {
+        switch intent {
+        case .create:
+            return createModeLabel
+        case .edit:
+            return "Edit"
+        }
+    }
 
     private var starterPrompts: [String] {
+        if isEditMode {
+            return [
+                "Keep the same composition, but refine the lighting and premium finish",
+                "Change this image into a cleaner lifestyle campaign shot with softer tones",
+                "Preserve the subject and structure, but restyle the scene with a more polished look"
+            ]
+        }
+
         switch (model.kind ?? "").lowercased() {
         case "video":
             return [
                 "Cinematic motion with soft camera drift and elegant light",
                 "Luxury product moment with crisp reflections and slow movement",
                 "Editorial scene that feels premium, modern, and atmospheric"
-            ]
-        case "edit":
-            return [
-                "Refine this image with cleaner tones and polished color balance",
-                "Give this shot a glossy lifestyle campaign finish",
-                "Turn this reference into a softer, brighter hero image"
             ]
         default:
             return [
@@ -38,7 +145,7 @@ struct ComposerView: View {
 
     private var canSubmit: Bool {
         let hasPrompt = !prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        let satisfiesInput = !model.requiresImageInput || selectedImageData != nil
+        let satisfiesInput = !referenceInputRequired || selectedImageData != nil
         return hasPrompt && satisfiesInput && !isSubmitting
     }
 
@@ -51,7 +158,7 @@ struct ComposerView: View {
                     heroCard
                     promptCard
 
-                    if model.requiresImageInput {
+                    if shouldShowReferenceCard {
                         referenceCard
                     }
 
@@ -69,6 +176,9 @@ struct ComposerView: View {
         }
         .navigationTitle(model.name)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(item: $activeJobDestination) { destination in
+            JobDetailView(jobID: destination.id)
+        }
         .safeAreaInset(edge: .bottom) {
             runBar
         }
@@ -118,7 +228,8 @@ struct ComposerView: View {
                 }
 
                 HStack(spacing: 12) {
-                    ComposerHeroPill(title: model.inputLabel)
+                    ComposerHeroPill(title: modeLabel(composerIntent))
+                    ComposerHeroPill(title: currentInputLabel)
                     ComposerHeroPill(title: model.displayKind)
                 }
             }
@@ -137,10 +248,33 @@ struct ComposerView: View {
                 StudioSectionHeader(
                     eyebrow: "Prompt",
                     title: "Shape the result",
-                    detail: "Write the core scene first, then tap a starter to quickly steer tone, mood, or output style."
+                    detail: isEditMode
+                        ? "Tell PhotoG what should change in the uploaded image while keeping the right parts intact."
+                        : "Write the core scene first, then tap a starter to quickly steer tone, mood, or output style."
                 )
 
-                TextField("Describe the image or clip you want to create", text: $prompt, axis: .vertical)
+                if supportsEditToggle {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("MODE")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        Picker("Mode", selection: $composerIntent) {
+                            ForEach(ComposerIntent.allCases) { intent in
+                                Text(modeLabel(intent)).tag(intent)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+
+                TextField(
+                    isEditMode
+                        ? "Describe how the uploaded picture should be changed"
+                        : "Describe the image or clip you want to create",
+                    text: $prompt,
+                    axis: .vertical
+                )
                     .font(.body)
                     .lineLimit(6, reservesSpace: true)
                     .padding(.horizontal, 16)
@@ -170,7 +304,9 @@ struct ComposerView: View {
                 StudioSectionHeader(
                     eyebrow: "Reference",
                     title: "Add a source image",
-                    detail: "This tool works best when you give it a visual starting point."
+                    detail: isEditMode
+                        ? "Upload the picture you want to transform, then describe the changes above."
+                        : "This reference is optional here, but you can keep it attached or remove it before running."
                 )
 
                 if let imageData = selectedImageData, let image = UIImage(data: imageData) {
@@ -260,7 +396,7 @@ struct ComposerView: View {
 
                 HStack(spacing: 12) {
                     StudioSummaryCard(value: model.displayKind, label: "Output mode")
-                    StudioSummaryCard(value: model.requiresImageInput ? "Required" : "Optional", label: "Reference input")
+                    StudioSummaryCard(value: referenceInputRequired ? "Required" : "Optional", label: "Reference input")
                 }
             }
         }
@@ -329,7 +465,11 @@ struct ComposerView: View {
 
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(canSubmit ? "Ready to create" : "Add prompt\(model.requiresImageInput && selectedImageData == nil ? " and image" : "")")
+                    Text(
+                        canSubmit
+                            ? (isEditMode ? "Ready to edit" : "Ready to create")
+                            : "Add prompt\(referenceInputRequired && selectedImageData == nil ? " and image" : "")"
+                    )
                         .font(.subheadline.weight(.semibold))
                     Text(model.name)
                         .font(.caption)
@@ -378,12 +518,14 @@ struct ComposerView: View {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
-            submittedJob = try await session.submitJob(
+            let job = try await session.submitJob(
                 model: model,
                 prompt: prompt,
                 negativePrompt: negativePrompt,
-                selectedImageData: selectedImageData
+                selectedImageData: referenceInputRequired ? selectedImageData : nil
             )
+            submittedJob = job
+            activeJobDestination = JobDestination(id: job.id)
         } catch {
             session.errorText = (error as? LocalizedError)?.errorDescription ?? String(describing: error)
         }

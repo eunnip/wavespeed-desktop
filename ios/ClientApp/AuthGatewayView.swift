@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 struct AuthGatewayView: View {
@@ -5,9 +6,9 @@ struct AuthGatewayView: View {
     @State private var showDeveloperOptions = false
 
     private let featureHighlights: [StudioFeature] = [
-        StudioFeature(icon: "sparkles", title: "Styled looks"),
-        StudioFeature(icon: "wand.and.stars", title: "Quick edits"),
-        StudioFeature(icon: "photo.stack.fill", title: "Favorite shots")
+        StudioFeature(icon: "photo.artframe", title: "AI Image"),
+        StudioFeature(icon: "video.fill", title: "AI Video"),
+        StudioFeature(icon: "square.stack.fill", title: "Library")
     ]
 
     private var environmentMessage: String {
@@ -66,7 +67,7 @@ struct AuthGatewayView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 28)
+                .padding(.top, 16)
                 .padding(.bottom, 40)
             }
             .scrollIndicators(.hidden)
@@ -74,54 +75,140 @@ struct AuthGatewayView: View {
     }
 
     private var heroSection: some View {
-        ZStack(alignment: .topTrailing) {
-            VStack(alignment: .leading, spacing: 16) {
-                StudioStatusBadge(
-                    icon: "hand.wave.fill",
-                    title: "Welcome",
-                    tint: Color("AccentColor")
-                )
+        ZStack(alignment: .bottomLeading) {
+            StudioHeroMediaView()
 
-                Text("Make photo ideas\nfeel effortless.")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundStyle(.primary)
+            LinearGradient(
+                colors: [
+                    Color.black.opacity(0.16),
+                    Color.black.opacity(0.12),
+                    Color.black.opacity(0.72)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
 
-                Text("Photo G is a friendly place to explore polished edits, fresh styles, and early creative concepts in just a few taps.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 28) {
+                HStack(alignment: .top, spacing: 14) {
+                    HStack(spacing: 12) {
+                        StudioMarkView(size: 54)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("PhotoG")
+                                .font(.system(size: 26, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                            Text("AI Studio")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.white.opacity(0.82))
+                        }
+                    }
+
+                    Spacer()
+
+                    Text("Experience Now")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.white.opacity(0.12), in: Capsule())
+                        .overlay(
+                            Capsule()
+                                .strokeBorder(Color.white.opacity(0.28))
+                        )
+                }
+
+                Spacer(minLength: 120)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    StudioStatusBadge(
+                        icon: "sparkles",
+                        title: "Welcome",
+                        tint: .white
+                    )
+
+                    Text("Welcome to PhotoG")
+                        .font(.system(size: 48, weight: .bold, design: .serif))
+                        .italic()
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("your all in one AI Studio")
+                        .font(.system(size: 28, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.95))
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Sign in once and move between AI image, AI video, edits, and your saved work from one premium creative home.")
+                        .font(.body)
+                        .foregroundStyle(.white.opacity(0.84))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                VStack(alignment: .leading, spacing: 12) {
+                    SignInWithAppleButtonView(
+                        label: .signIn,
+                        style: .white,
+                        height: 58
+                    )
+
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 12) {
+                            SignInWithAppleButtonView(
+                                label: .signUp,
+                                style: .whiteOutline,
+                                height: 50
+                            )
+
+                            SignInWithAppleButtonView(
+                                label: .continue,
+                                style: .whiteOutline,
+                                height: 50
+                            )
+                        }
+
+                        VStack(spacing: 12) {
+                            SignInWithAppleButtonView(
+                                label: .signUp,
+                                style: .whiteOutline,
+                                height: 50
+                            )
+
+                            SignInWithAppleButtonView(
+                                label: .continue,
+                                style: .whiteOutline,
+                                height: 50
+                            )
+                        }
+                    }
+
+                    Text("Create an account or get started instantly with Apple.")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.80))
+                }
             }
-
-            StudioMarkView(size: 88)
-                .padding(.top, 8)
+            .padding(24)
         }
+        .frame(minHeight: 620)
+        .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 34, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.14))
+        )
+        .shadow(color: Color.black.opacity(0.36), radius: 30, y: 22)
     }
 
     private var signInCard: some View {
         StudioSurface {
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Start with Photo G")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-
-                    Text("Use Apple to get into the app quickly, keep your setup secure, and open your creative space.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                Spacer(minLength: 12)
-
-                StudioOrbView()
-            }
+            StudioSectionHeader(
+                eyebrow: "Launch",
+                title: "Everything you need is behind one sign-in",
+                detail: "PhotoG keeps the entry simple, then hands off to curated models, creation modes, and your saved outputs."
+            )
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 10)], spacing: 10) {
                 ForEach(featureHighlights) { feature in
                     StudioFeaturePill(feature: feature)
                 }
             }
-
-            SignInWithAppleButtonView()
 
             if session.allowsSimulatorMockSignIn && !session.allowsDeveloperConnection {
                 Button(action: continueInSimulator) {
@@ -269,6 +356,120 @@ struct AuthGatewayView: View {
         Task {
             await session.signInWithMockSession()
         }
+    }
+}
+
+private struct StudioHeroMediaView: View {
+    private let videoName = "photog-auth-hero"
+    private let videoExtension = "mp4"
+
+    var body: some View {
+        ZStack {
+            if let url = Bundle.main.url(forResource: videoName, withExtension: videoExtension) {
+                StudioLoopingVideoView(url: url)
+                    .allowsHitTesting(false)
+            } else {
+                fallbackArtwork
+            }
+        }
+    }
+
+    private var fallbackArtwork: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.17, green: 0.41, blue: 0.46),
+                    Color(red: 0.25, green: 0.54, blue: 0.61),
+                    Color(red: 0.08, green: 0.15, blue: 0.21)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            Ellipse()
+                .fill(Color.white.opacity(0.18))
+                .frame(width: 560, height: 220)
+                .blur(radius: 50)
+                .offset(x: 0, y: -220)
+
+            RoundedRectangle(cornerRadius: 52, style: .continuous)
+                .fill(Color.black.opacity(0.18))
+                .frame(width: 250, height: 180)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 52, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.24), lineWidth: 1)
+                )
+                .offset(x: 0, y: 170)
+
+            Circle()
+                .fill(Color.white.opacity(0.18))
+                .frame(width: 12, height: 12)
+                .offset(x: 0, y: 228)
+        }
+    }
+}
+
+private struct StudioLoopingVideoView: UIViewRepresentable {
+    let url: URL
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(url: url)
+    }
+
+    func makeUIView(context: Context) -> StudioPlayerContainerView {
+        let view = StudioPlayerContainerView()
+        view.playerLayer.player = context.coordinator.player
+        context.coordinator.player.play()
+        return view
+    }
+
+    func updateUIView(_ uiView: StudioPlayerContainerView, context: Context) {
+        if uiView.playerLayer.player !== context.coordinator.player {
+            uiView.playerLayer.player = context.coordinator.player
+        }
+        if context.coordinator.player.timeControlStatus != .playing {
+            context.coordinator.player.play()
+        }
+    }
+
+    static func dismantleUIView(_ uiView: StudioPlayerContainerView, coordinator: Coordinator) {
+        coordinator.player.pause()
+        uiView.playerLayer.player = nil
+    }
+
+    final class Coordinator {
+        let player: AVQueuePlayer
+        let looper: AVPlayerLooper
+
+        init(url: URL) {
+            let item = AVPlayerItem(url: url)
+            let player = AVQueuePlayer()
+            player.isMuted = true
+            player.actionAtItemEnd = .none
+            player.preventsDisplaySleepDuringVideoPlayback = false
+            self.player = player
+            self.looper = AVPlayerLooper(player: player, templateItem: item)
+        }
+    }
+}
+
+private final class StudioPlayerContainerView: UIView {
+    override class var layerClass: AnyClass {
+        AVPlayerLayer.self
+    }
+
+    var playerLayer: AVPlayerLayer {
+        layer as! AVPlayerLayer
+    }
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        playerLayer.videoGravity = .resizeAspectFill
+        backgroundColor = .clear
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }
 

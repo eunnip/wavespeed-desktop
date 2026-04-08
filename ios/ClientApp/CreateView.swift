@@ -76,8 +76,8 @@ struct CreateView: View {
                 }
                 .scrollIndicators(.hidden)
             }
-            .navigationDestination(for: CatalogModel.self) { model in
-                ComposerView(model: model)
+            .navigationDestination(for: ComposerDestination.self) { destination in
+                ComposerView(destination: destination)
             }
             .refreshable {
                 await session.refreshSessionData()
@@ -251,7 +251,7 @@ struct CreateView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 14) {
                         ForEach(trendModels) { model in
-                            NavigationLink(value: model) {
+                            NavigationLink(value: ComposerDestination(model: model)) {
                                 HomeTrendCard(model: model)
                             }
                             .buttonStyle(.plain)
@@ -274,7 +274,7 @@ struct CreateView: View {
                 )
 
                 ForEach(recommendedModels) { model in
-                    NavigationLink(value: model) {
+                    NavigationLink(value: ComposerDestination(model: model)) {
                         HomeRecommendationRow(model: model)
                     }
                     .buttonStyle(.plain)

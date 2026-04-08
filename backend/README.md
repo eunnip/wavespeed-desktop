@@ -67,6 +67,13 @@ http://127.0.0.1:8787
 - optionally set `WAVESPEED_MODEL_ALLOWLIST` to a comma-separated list of model IDs you want exposed in the app
 - leave `WAVESPEED_MODEL_ALLOWLIST` empty to auto-expose compatible text-to-image, image-to-image, text-to-video, and image-to-video models
 
+### Testing without a subscription
+
+- set `IOS_BACKEND_SUBSCRIPTION_BYPASS_EMAILS` to a comma-separated list of Apple account emails that should be allowed to create jobs without an active purchase
+- or set `IOS_BACKEND_ALLOW_UNSUBSCRIBED_JOB_CREATION=true` to bypass subscription checks for every authenticated user in that deployment
+- allowlisted users will see an active entitlement in the app and can create real WaveSpeed jobs through `POST /v1/jobs`
+- keep these unset for normal production behavior
+
 ## Important limitations
 
 - Uploaded files and generated media stay on WaveSpeed’s retention window. The backend stores metadata and task IDs, not durable media copies.

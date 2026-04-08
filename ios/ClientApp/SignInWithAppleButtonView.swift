@@ -4,10 +4,23 @@ import SwiftUI
 
 struct SignInWithAppleButtonView: View {
     @EnvironmentObject private var session: AppSession
+    let label: SignInWithAppleButton.Label
+    let style: SignInWithAppleButton.Style
+    let height: CGFloat
+
+    init(
+        label: SignInWithAppleButton.Label = .signIn,
+        style: SignInWithAppleButton.Style = .black,
+        height: CGFloat = 54
+    ) {
+        self.label = label
+        self.style = style
+        self.height = height
+    }
 
     var body: some View {
         ZStack {
-            SignInWithAppleButton(.signIn) { request in
+            SignInWithAppleButton(label) { request in
                 let rawNonce = randomNonce()
                 request.requestedScopes = [.fullName, .email]
                 request.nonce = sha256(rawNonce)
@@ -36,8 +49,8 @@ struct SignInWithAppleButtonView: View {
                     session.errorText = message(for: error)
                 }
             }
-            .signInWithAppleButtonStyle(.black)
-            .frame(height: 54)
+            .signInWithAppleButtonStyle(style)
+            .frame(height: height)
             .disabled(session.isBusy)
             .opacity(session.isBusy ? 0.88 : 1)
 

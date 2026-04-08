@@ -54,6 +54,8 @@ type BackendConfig = {
   appStoreKeyId: string;
   appStorePrivateKeyPem: string;
   appStoreEnableServerApi: boolean;
+  allowUnsubscribedJobCreation: boolean;
+  subscriptionBypassEmails: string[];
   waveSpeedAPIKey: string;
   waveSpeedAPIBaseURL: string;
   waveSpeedModelAllowlist: string[];
@@ -427,8 +429,32 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
       .find((purchase) => new Date(purchase.expiresAt).getTime() > now);
   }
 
-  async function entitlementSummary(userId: string) {
-    const purchase = await activePurchaseForUser(userId);
+  function hasSubscriptionBypass(user: UserRecord): boolean {
+    if (config.allowUnsubscribedJobCreation) {
+      return true;
+    }
+    const email = user.email?.trim().toLowerCase();
+    if (!email) {
+      return false;
+    }
+    return config.subscriptionBypassEmails.some(
+      (allowedEmail) => allowedEmail.trim().toLowerCase() == email,
+    );
+  }
+
+  async function entitlementSummary(user: UserRecord) {
+    const purchase = await activePurchaseForUser(user.id);
+    if (hasSubscriptionBypass(user)) {
+      return {
+        is_active: true,
+        tier_name: purchase ? humanizeProductId(purchase.productId) : "Developer Access",
+        renewal_date: purchase?.expiresAt ?? null,
+        usage_description: purchase
+          ? "Subscription is active."
+          : "Developer entitlement bypass is active for this account.",
+        management_url: config.managementURL,
+      };
+    }
     return {
       is_active: Boolean(purchase),
       tier_name: purchase ? humanizeProductId(purchase.productId) : null,
@@ -485,7 +511,7 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
         display_name: user.displayName ?? null,
         email: user.email ?? null,
       },
-      entitlements: await entitlementSummary(user.id),
+      entitlements: await entitlementSummary(user),
     };
   }
 
@@ -748,7 +774,7 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
 
     if (context.method === "GET" && context.url.pathname === "/v1/me/entitlements") {
       const user = ensureAuthenticated(context);
-      return jsonResponse(context.requestId, 200, { data: await entitlementSummary(user.id) });
+      return jsonResponse(context.requestId, 200, { data: await entitlementSummary(user) });
     }
 
     if (context.method === "POST" && context.url.pathname === "/v1/iap/apple/sync") {
@@ -831,7 +857,7 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
               : config.mode === "production"
                 ? "Transaction accepted. Configure signed transaction enforcement before production launch."
                 : "Transaction accepted in local development mode.",
-          entitlement: await entitlementSummary(user.id),
+          entitlement: await entitlementSummary(user),
         },
       });
     }
@@ -898,8 +924,8 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
               ? "Restore processed with Apple transaction history."
               : config.mode === "production"
                 ? "Restore processed. Configure Apple server verification before production launch."
-              : "Restore processed in local development mode.",
-          entitlement: await entitlementSummary(user.id),
+                : "Restore processed in local development mode.",
+          entitlement: await entitlementSummary(user),
         },
       });
     }
@@ -934,7 +960,7 @@ export function createBackendApp(dependencies: Dependencies): BackendApp {
 
     if (context.method === "POST" && context.url.pathname === "/v1/jobs") {
       const user = ensureAuthenticated(context);
-      const entitlement = await entitlementSummary(user.id);
+      const entitlement = await entitlementSummary(user);
       if (!entitlement.is_active) {
         throw {
           status: 403,
